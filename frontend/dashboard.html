@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Role-specific operational overview dashboard for relief supply chain status and disaster response coordination.">
+  <title>Dashboard Overview — Relief Supply Chain Platform</title>
+
+  <!-- Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- CSS Architecture -->
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header" id="app-header"></header>
+
+    <div class="app-body">
+      <nav class="app-nav" id="app-nav" aria-label="Operational Navigation"></nav>
+
+      <main class="app-main" id="main-content">
+        <!-- Header Banner -->
+        <header style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:var(--space-md);">
+          <div>
+            <h1 id="dashboard-title">Operational Orientation Overview</h1>
+            <p class="text-sm" id="dashboard-subtitle" style="color:var(--slate-600);">Real-time status overview of convoys, damaged transportation corridors, and shelter demand.</p>
+          </div>
+          <div id="dashboard-primary-actions" class="flex gap-sm">
+            <a href="live-map.html" class="button button--primary">🗺️ Open Live Map View</a>
+          </div>
+        </header>
+
+        <!-- Dynamic Role Dashboard View Container -->
+        <div id="dashboard-role-viewport" style="display:flex; flex-direction:column; gap:var(--space-lg);">
+          <!-- Loading State Baseline -->
+          <div class="card flex items-center justify-between" style="padding:var(--space-xl);">
+            <div class="flex items-center gap-md">
+              <span style="font-size:24px;">🔄</span>
+              <div>
+                <h3 style="margin:0;">Initializing Operational Telemetry...</h3>
+                <p class="text-xs" style="margin:0; color:var(--slate-600);">Connecting to REST API and real-time Socket.io data stream</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script type="module" src="js/pages/dashboard.js"></script>
+</body>
+</html>

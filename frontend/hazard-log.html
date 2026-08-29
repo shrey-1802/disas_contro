@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Reverse-chronological hazard and incident feed with field reporting capabilities and offline synchronization queue.">
+  <title>Hazard Log & Field Reporting — Relief Supply Chain Platform</title>
+
+  <!-- Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- CSS Architecture -->
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header" id="app-header"></header>
+
+    <div class="app-body">
+      <nav class="app-nav" id="app-nav" aria-label="Operational Navigation"></nav>
+
+      <main class="app-main" id="main-content">
+        <header style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <h1>Hazard & Incident Log</h1>
+            <p class="text-sm" style="color:var(--slate-600);">Field hazard reporting timeline, environmental sensors, bridge status, and verification workflow.</p>
+          </div>
+          <div>
+            <button class="button button--primary" id="btn-open-report-modal">⚠️ Log New Hazard Incident</button>
+          </div>
+        </header>
+
+        <!-- Incident Timeline Feed -->
+        <div style="display:flex; flex-direction:column; gap:var(--space-md);" id="hazard-feed">
+          <!-- Item 1 -->
+          <div class="card card--critical">
+            <div class="card__header">
+              <div class="flex items-center gap-sm">
+                <span class="status-badge status-badge--blocked">🛑 IMPASSABLE</span>
+                <h3 class="card__title" style="font-size:var(--font-size-base);">Bridge B-14 Submersion & Structural Failure</h3>
+              </div>
+              <span class="text-xs" style="color:var(--slate-600);">Reported 12m ago</span>
+            </div>
+            <p class="text-sm" style="margin-bottom:var(--space-sm);">Water depth exceeded 1.4m over deck surface following hillside surge. Debris accumulation blocking northbound lane.</p>
+            <div class="flex items-center justify-between text-xs" style="color:var(--slate-600);">
+              <div>Source: <strong>Field Driver Report (Convoy 14)</strong> | Confidence: <strong>89%</strong> | Region: <strong>Sector 6</strong></div>
+              <div>
+                <button class="button button--secondary text-xs">Verify & Promote to Map</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Item 2 -->
+          <div class="card card--warning">
+            <div class="card__header">
+              <div class="flex items-center gap-sm">
+                <span class="status-badge status-badge--caution">▲ DEGRADED</span>
+                <h3 class="card__title" style="font-size:var(--font-size-base);">Hillside Debris Slide — Route C Feeder Road</h3>
+              </div>
+              <span class="text-xs" style="color:var(--slate-600);">Reported 45m ago</span>
+            </div>
+            <p class="text-sm" style="margin-bottom:var(--space-sm);">Partial mud accumulation across single lane. Passable only by 4WD/heavy clearance relief convoys.</p>
+            <div class="flex items-center justify-between text-xs" style="color:var(--slate-600);">
+              <div>Source: <strong>Satellite Remote Sensing</strong> | Confidence: <strong>76%</strong> | Region: <strong>Sector 2</strong></div>
+              <div>
+                <span class="status-badge status-badge--safe">✓ VERIFIED</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script type="module" src="js/pages/hazardLog.js"></script>
+</body>
+</html>

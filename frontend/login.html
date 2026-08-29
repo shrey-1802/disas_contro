@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Official government authentication portal for the Relief Supply Chain Resilience & Rerouting System.">
+  <title>Institutional Authentication Portal — Relief Supply Chain Platform</title>
+
+  <!-- Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- CSS Architecture -->
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+
+  <style>
+    .login-page-bg {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background: radial-gradient(circle at 50% 20%, #F4F8EC 0%, var(--bg-honeydew) 60%, var(--sage-100) 100%);
+    }
+
+    .login-top-bar {
+      padding: var(--space-md) var(--space-xl);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--sage-200);
+      background-color: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(8px);
+    }
+
+    .login-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-xl) var(--space-md);
+    }
+
+    .login-card-wrapper {
+      background-color: #FFFFFF;
+      border: 1px solid var(--sage-500);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 520px;
+      padding: var(--space-xl);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .login-header-banner {
+      text-align: center;
+      margin-bottom: var(--space-lg);
+    }
+
+    .login-emblem-badge {
+      width: 54px;
+      height: 54px;
+      background-color: var(--slate-800);
+      color: #FFFFFF;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto var(--space-sm) auto;
+      font-weight: 700;
+      font-size: 20px;
+      border: 2px solid var(--forest-600);
+      box-shadow: 0 0 10px rgba(90, 122, 104, 0.3);
+    }
+
+    .role-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: var(--space-sm);
+      margin-bottom: var(--space-lg);
+    }
+
+    .role-card {
+      border: 2px solid var(--sage-200);
+      border-radius: var(--radius);
+      padding: var(--space-sm) var(--space-md);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      background-color: var(--bg-honeydew-light);
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+    }
+
+    .role-card:hover {
+      border-color: var(--forest-600);
+      background-color: #FFFFFF;
+    }
+
+    .role-card.selected {
+      border-color: var(--forest-600);
+      background-color: var(--sage-100);
+      box-shadow: 0 0 0 1px var(--forest-600);
+    }
+
+    .role-card__icon {
+      font-size: 24px;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #FFFFFF;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--sage-200);
+    }
+
+    .role-card__info {
+      flex: 1;
+    }
+
+    .role-card__title {
+      font-weight: 700;
+      font-size: var(--font-size-sm);
+      color: var(--slate-800);
+    }
+
+    .role-card__desc {
+      font-size: var(--font-size-xs);
+      color: var(--slate-600);
+    }
+
+    .login-footer {
+      padding: var(--space-md);
+      text-align: center;
+      font-size: var(--font-size-xs);
+      color: var(--slate-600);
+      border-top: 1px solid var(--sage-200);
+      background-color: rgba(255, 255, 255, 0.5);
+    }
+  </style>
+</head>
+<body class="login-page-bg">
+  <!-- Official Header Bar -->
+  <header class="login-top-bar">
+    <div class="flex items-center gap-sm">
+      <div class="app-header__emblem" style="width:28px; height:28px; font-size:12px;" aria-hidden="true">GOV</div>
+      <span class="font-bold text-sm" style="letter-spacing:0.03em;">DISASTER RESPONSE COMMAND NETWORK</span>
+    </div>
+    <div class="connectivity-indicator connectivity-indicator--online" id="login-connectivity-badge">
+      <span class="connectivity-indicator__dot"></span>
+      <span class="text-xs" style="color:var(--slate-800); font-weight:600;">SECURE NETWORK CONNECTED</span>
+    </div>
+  </header>
+
+  <!-- Login Main Content -->
+  <div class="login-container">
+    <main class="login-card-wrapper">
+      <div class="login-header-banner">
+        <div class="login-emblem-badge" aria-hidden="true">GOV</div>
+        <h1 style="font-size:var(--font-size-xl); margin-bottom:4px;">Institutional Access Portal</h1>
+        <p class="text-sm" style="color:var(--slate-600); margin:0;">Relief Supply Chain Resilience & Rerouting Intelligence System</p>
+      </div>
+
+      <!-- Accessible Alert Message Container -->
+      <div id="login-error" class="alert alert--critical hidden" style="margin-bottom: var(--space-md);" role="alert">
+        <span>🛑</span>
+        <span id="login-error-text">Authentication failed. Please verify credentials and role selection.</span>
+      </div>
+
+      <form id="login-form">
+        <!-- Interactive Role Selection Grid -->
+        <fieldset style="border:none; padding:0; margin:0 0 var(--space-md) 0;">
+          <legend class="font-semibold text-sm" style="margin-bottom:var(--space-xs); color:var(--slate-800);">Select Operational Role Context</legend>
+          <div class="role-grid">
+            <!-- Control Room Card -->
+            <div class="role-card selected" data-role="Control Room" tabindex="0" role="radio" aria-checked="true">
+              <div class="role-card__icon" aria-hidden="true">🗺️</div>
+              <div class="role-card__info">
+                <div class="role-card__title">Control Room Operator</div>
+                <div class="role-card__desc">Primary live map situational awareness & hazard dispatch command</div>
+              </div>
+            </div>
+
+            <!-- District Admin Card -->
+            <div class="role-card" data-role="District Admin" tabindex="0" role="radio" aria-checked="false">
+              <div class="role-card__icon" aria-hidden="true">🏠</div>
+              <div class="role-card__info">
+                <div class="role-card__title">District Admin</div>
+                <div class="role-card__desc">Regional shelter supply board, resource demands & convoy monitoring</div>
+              </div>
+            </div>
+
+            <!-- Field Driver Card -->
+            <div class="role-card" data-role="Field Driver" tabindex="0" role="radio" aria-checked="false">
+              <div class="role-card__icon" aria-hidden="true">⚠️</div>
+              <div class="role-card__info">
+                <div class="role-card__title">Field Convoy Driver</div>
+                <div class="role-card__desc">Field hazard incident reporting, route telemetry & offline sync</div>
+              </div>
+            </div>
+          </div>
+        </fieldset>
+
+        <!-- Hidden inputs backing the form -->
+        <input type="hidden" id="role-select" name="role" value="Control Room">
+
+        <div style="margin-bottom: var(--space-md);">
+          <label for="email-input" class="font-semibold text-sm" style="display:block; margin-bottom: var(--space-xs);">Operational Identifier / Email</label>
+          <input type="email" id="email-input" value="control.room@disaster.gov" required placeholder="officer@disaster.gov" autocomplete="username">
+        </div>
+
+        <div style="margin-bottom: var(--space-lg);">
+          <label for="password-input" class="font-semibold text-sm" style="display:block; margin-bottom: var(--space-xs);">Access Credentials</label>
+          <input type="password" id="password-input" value="••••••••••••" required autocomplete="current-password">
+        </div>
+
+        <button type="submit" id="login-submit-btn" class="button button--primary" style="width: 100%; min-height: 44px; font-size:var(--font-size-md);">
+          <span>🔒 Authenticate & Access Operational Surface</span>
+        </button>
+      </form>
+
+      <!-- Institutional Notice -->
+      <div style="margin-top: var(--space-lg); padding-top: var(--space-md); border-top:1px solid var(--sage-200); text-align: center;" class="text-xs text-muted">
+        <p style="margin-bottom:4px; font-weight:600; color:var(--slate-800);">RESTRICTED OFFICIAL EMERGENCY SYSTEM</p>
+        <p style="margin:0; color:var(--slate-600);">Unauthorized access or tampering is prohibited under Emergency Operations Regulations.</p>
+      </div>
+    </main>
+  </div>
+
+  <!-- Official Footer -->
+  <footer class="login-footer">
+    <span>National Disaster Management Authority | Relief Supply Chain Resilience Platform v2.4</span>
+  </footer>
+
+  <script type="module" src="js/pages/login.js"></script>
+</body>
+</html>

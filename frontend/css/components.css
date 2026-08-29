@@ -1,0 +1,568 @@
+/* ==========================================================================
+   REUSABLE UI COMPONENTS & SHELL STYLES
+   Relief Supply Chain Resilience & Rerouting System
+   Supports 4 Operational States: DEFAULT | HOVER/FOCUS | WARNING | CRITICAL
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. GLOBAL APPLICATION SHELL LAYOUT
+   -------------------------------------------------------------------------- */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: var(--bg-honeydew);
+}
+
+.app-header {
+  height: var(--header-height);
+  background-color: var(--slate-800);
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--space-md);
+  position: sticky;
+  top: 0;
+  z-index: var(--z-header);
+  box-shadow: var(--shadow-md);
+}
+
+.app-header__identity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.app-header__emblem {
+  width: 32px;
+  height: 32px;
+  background-color: var(--forest-600);
+  border: 1px solid var(--sage-500);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  color: #FFFFFF;
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.2);
+}
+
+.app-header__title {
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header__sysname {
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: #FFFFFF;
+}
+
+.app-header__subtitle {
+  font-size: var(--font-size-xs);
+  color: var(--sage-200);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.app-header__center {
+  flex: 1;
+  max-width: 480px;
+  margin: 0 var(--space-lg);
+}
+
+.app-header__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.app-body {
+  display: flex;
+  flex: 1;
+  position: relative;
+}
+
+.app-nav {
+  width: var(--nav-width);
+  background-color: var(--slate-900);
+  color: var(--slate-200);
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--slate-700);
+  transition: width var(--transition-normal);
+  z-index: var(--z-nav);
+}
+
+.app-nav__list {
+  list-style: none;
+  padding: var(--space-md) var(--space-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.app-nav__item a {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 10px 14px;
+  color: var(--slate-200);
+  text-decoration: none;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  border-radius: var(--radius);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.app-nav__item a:hover {
+  background-color: var(--slate-700);
+  color: #FFFFFF;
+}
+
+.app-nav__item.active a {
+  background-color: var(--forest-600);
+  color: #FFFFFF;
+  font-weight: 600;
+}
+
+.app-nav__icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+.app-main {
+  flex: 1;
+  padding: var(--space-lg);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+/* Operational Header Banner (Critical Items Only) */
+.critical-banner {
+  background-color: var(--slate-800);
+  color: #FFFFFF;
+  border-bottom: 3px solid var(--slate-900);
+  padding: var(--space-sm) var(--space-md);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  z-index: var(--z-banner);
+}
+
+.critical-banner__content {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.critical-banner__badge {
+  background-color: #FFFFFF;
+  color: var(--slate-900);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+/* --------------------------------------------------------------------------
+   2. BUTTON COMPONENTS (4-STATE SUPPORT)
+   -------------------------------------------------------------------------- */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  padding: 8px 16px;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  border-radius: var(--radius);
+  transition: all var(--transition-fast);
+  text-decoration: none;
+  cursor: pointer;
+  border: 1px solid transparent;
+  user-select: none;
+}
+
+/* Button Primary: Forest-600 Fill */
+.button--primary {
+  background-color: var(--forest-600);
+  color: #FFFFFF;
+  border-color: var(--forest-700);
+}
+
+.button--primary:hover {
+  background-color: var(--forest-700);
+  border-color: var(--forest-800);
+}
+
+.button--primary:focus-visible {
+  box-shadow: 0 0 0 3px rgba(90, 122, 104, 0.4);
+}
+
+/* Button Secondary: Sage-500 Outline */
+.button--secondary {
+  background-color: transparent;
+  color: var(--forest-700);
+  border-color: var(--sage-500);
+}
+
+.button--secondary:hover {
+  background-color: var(--sage-100);
+  border-color: var(--forest-600);
+}
+
+/* Button Critical: Slate-800 Fill */
+.button--critical {
+  background-color: var(--slate-800);
+  color: #FFFFFF;
+  border-color: var(--slate-900);
+}
+
+.button--critical:hover {
+  background-color: var(--slate-900);
+}
+
+/* Button Warning */
+.button--warning {
+  background-color: var(--sage-200);
+  color: var(--slate-900);
+  border-color: var(--sage-500);
+}
+
+.button--warning:hover {
+  background-color: var(--sage-300);
+}
+
+/* Button Disabled */
+.button--disabled,
+.button:disabled {
+  background-color: var(--slate-100) !important;
+  color: var(--slate-600) !important;
+  border-color: var(--slate-200) !important;
+  cursor: not-allowed !important;
+  opacity: 0.6;
+  box-shadow: none !important;
+}
+
+/* --------------------------------------------------------------------------
+   3. STATUS BADGES & PRIORITY CHIPS
+   -------------------------------------------------------------------------- */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  border-radius: var(--radius-full);
+  border: 1px solid transparent;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+/* Tier 1: SAFE (Sage) */
+.status-badge--safe {
+  background-color: var(--status-safe-bg);
+  border-color: var(--status-safe-border);
+  color: var(--status-safe-text);
+}
+
+/* Tier 2: CAUTION (Forest) */
+.status-badge--caution {
+  background-color: var(--status-caution-bg);
+  border-color: var(--status-caution-border);
+  color: var(--status-caution-text);
+}
+
+/* Tier 3: BLOCKED (Slate) */
+.status-badge--blocked {
+  background-color: var(--status-blocked-bg);
+  border-color: var(--status-blocked-border);
+  color: var(--status-blocked-text);
+}
+
+/* Priority Badges */
+.priority-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  border-radius: var(--radius-sm);
+}
+
+.priority-badge--critical {
+  background-color: var(--slate-800);
+  color: #FFFFFF;
+}
+
+.priority-badge--high {
+  background-color: var(--forest-600);
+  color: #FFFFFF;
+}
+
+.priority-badge--medium {
+  background-color: var(--sage-500);
+  color: #FFFFFF;
+}
+
+.priority-badge--low {
+  background-color: var(--sage-100);
+  color: var(--slate-800);
+  border: 1px solid var(--sage-500);
+}
+
+/* --------------------------------------------------------------------------
+   4. CARDS & ALERTS
+   -------------------------------------------------------------------------- */
+.card {
+  background-color: #FFFFFF;
+  border: 1px solid var(--sage-200);
+  border-radius: var(--radius);
+  padding: var(--space-md);
+  box-shadow: var(--shadow-sm);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.card:hover {
+  border-color: var(--sage-500);
+  box-shadow: var(--shadow-md);
+}
+
+.card--warning {
+  border-left: 4px solid var(--forest-600);
+  background-color: var(--bg-honeydew-light);
+}
+
+.card--critical {
+  border-left: 4px solid var(--slate-800);
+  background-color: var(--slate-100);
+}
+
+.card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-sm);
+  padding-bottom: var(--space-xs);
+  border-bottom: 1px solid var(--sage-100);
+}
+
+.card__title {
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  color: var(--slate-800);
+  margin: 0;
+}
+
+.alert {
+  padding: var(--space-md);
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+  font-size: var(--font-size-sm);
+}
+
+.alert--warning {
+  background-color: var(--forest-100);
+  border-color: var(--forest-600);
+  color: var(--forest-800);
+}
+
+.alert--critical {
+  background-color: var(--slate-100);
+  border-color: var(--slate-800);
+  color: var(--slate-900);
+}
+
+/* --------------------------------------------------------------------------
+   5. CONNECTIVITY & SYNC INDICATORS
+   -------------------------------------------------------------------------- */
+.connectivity-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--sage-200);
+}
+
+.connectivity-indicator__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--sage-500);
+}
+
+.connectivity-indicator--online .connectivity-indicator__dot {
+  background-color: #4CAF50;
+  box-shadow: 0 0 6px #4CAF50;
+}
+
+.connectivity-indicator--offline .connectivity-indicator__dot {
+  background-color: #E53935;
+  box-shadow: 0 0 6px #E53935;
+}
+
+.connectivity-indicator--degraded .connectivity-indicator__dot {
+  background-color: #FFB300;
+}
+
+.sync-indicator {
+  font-size: var(--font-size-xs);
+  color: var(--sage-200);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* --------------------------------------------------------------------------
+   6. DATA TABLES, SEARCH & FILTER BARS
+   -------------------------------------------------------------------------- */
+.data-table-container {
+  background-color: #FFFFFF;
+  border: 1px solid var(--sage-200);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.data-table tr:nth-child(even) {
+  background-color: var(--bg-honeydew-light);
+}
+
+.data-table tr:hover {
+  background-color: var(--sage-100);
+}
+
+.filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  background-color: #FFFFFF;
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--sage-200);
+  border-radius: var(--radius);
+  margin-bottom: var(--space-md);
+}
+
+.search-bar {
+  position: relative;
+  width: 100%;
+}
+
+.search-bar input {
+  padding-left: 36px;
+}
+
+.search-bar__icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--slate-600);
+  font-size: 14px;
+  pointer-events: none;
+}
+
+/* --------------------------------------------------------------------------
+   7. TOAST NOTIFICATIONS & MODALS
+   -------------------------------------------------------------------------- */
+.toast-container {
+  position: fixed;
+  bottom: var(--space-lg);
+  right: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  z-index: var(--z-toast);
+}
+
+.toast {
+  background-color: var(--slate-800);
+  color: #FFFFFF;
+  padding: 12px 18px;
+  border-radius: var(--radius);
+  border-left: 4px solid var(--forest-600);
+  box-shadow: var(--shadow-lg);
+  font-size: var(--font-size-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  min-width: 280px;
+  max-width: 400px;
+  animation: slideIn 200ms ease-out;
+}
+
+.toast--critical {
+  border-left-color: var(--slate-900);
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(38, 50, 56, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+  backdrop-filter: blur(2px);
+}
+
+.modal {
+  background-color: #FFFFFF;
+  border-radius: var(--radius-lg);
+  width: 90%;
+  max-width: 540px;
+  border: 1px solid var(--sage-500);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+.modal__header {
+  padding: var(--space-md) var(--space-lg);
+  background-color: var(--slate-800);
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal__body {
+  padding: var(--space-lg);
+}
+
+.modal__footer {
+  padding: var(--space-md) var(--space-lg);
+  background-color: var(--bg-honeydew-light);
+  border-top: 1px solid var(--sage-200);
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+}

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="System settings, Field Mode toggles, accessibility controls, and offline synchronization parameters.">
+  <title>Settings — Relief Supply Chain Platform</title>
+
+  <!-- Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- CSS Architecture -->
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header" id="app-header"></header>
+
+    <div class="app-body">
+      <nav class="app-nav" id="app-nav" aria-label="Operational Navigation"></nav>
+
+      <main class="app-main" id="main-content">
+        <header>
+          <h1>System Settings & Preferences</h1>
+          <p class="text-sm" style="color:var(--slate-600);">Manage field operation modes, accessibility settings, and local offline data synchronization.</p>
+        </header>
+
+        <section style="display:flex; flex-direction:column; gap:var(--space-lg); max-width:720px;">
+          <!-- Field Mode Settings -->
+          <div class="card">
+            <div class="card__header">
+              <h2 class="card__title">📱 Outdoor Field Tablet Mode</h2>
+            </div>
+            <p class="text-sm">Optimizes UI contrast, increases font sizes to 16px minimum, and expands touch targets for outdoor sunlight visibility and gloved operation.</p>
+            <div style="margin-top:var(--space-md);">
+              <label class="flex items-center gap-sm font-semibold">
+                <input type="checkbox" id="setting-field-mode"> Enable High-Contrast Field Mode (Persisted Locally)
+              </label>
+            </div>
+          </div>
+
+          <!-- Language & Localization -->
+          <div class="card">
+            <div class="card__header">
+              <h2 class="card__title">🌐 Language & Localization</h2>
+            </div>
+            <p class="text-sm">Multilingual support built into system type scales and component layouts.</p>
+            <div style="margin-top:var(--space-md); max-width:320px;">
+              <label for="language-select" class="font-semibold text-sm" style="display:block; margin-bottom:var(--space-xs);">Operational Interface Language</label>
+              <select id="language-select">
+                <option value="en" selected>English (Official Government Baseline)</option>
+                <option value="es">Español (Regional Operations)</option>
+                <option value="hi">हिंदी (Regional Disaster Operations)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Offline Data & Synchronization -->
+          <div class="card">
+            <div class="card__header">
+              <h2 class="card__title">🔄 Offline Queue & Local Data Cache</h2>
+            </div>
+            <p class="text-sm">Local storage handles queued field reports when connectivity is severed.</p>
+            <div style="margin-top:var(--space-md); display:flex; gap:var(--space-sm);">
+              <button class="button button--secondary text-xs" id="btn-sync-now">🔄 Trigger Immediate Re-Sync</button>
+              <button class="button button--secondary text-xs" id="btn-clear-cache">🗑️ Clear Cached Maps & Offline Queue</button>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script type="module" src="js/pages/settings.js"></script>
+</body>
+</html>

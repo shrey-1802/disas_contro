@@ -1,0 +1,216 @@
+/* ==========================================================================
+   BASE STYLES & GLOBAL RESET
+   Relief Supply Chain Resilience & Rerouting System
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-family: var(--font-sans);
+  font-size: 16px; /* Browser root */
+  line-height: var(--lh-normal);
+  color: var(--slate-800);
+  background-color: var(--bg-honeydew);
+  -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-size: var(--font-size-base);
+  color: var(--slate-800);
+  background-color: var(--bg-honeydew);
+  overflow-x: hidden;
+}
+
+/* Typography Hierarchy */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--slate-800);
+  font-weight: 700;
+  line-height: var(--lh-tight);
+  margin-bottom: var(--space-sm);
+}
+
+h1 { font-size: var(--font-size-2xl); }
+h2 { font-size: var(--font-size-xl); }
+h3 { font-size: var(--font-size-lg); }
+h4 { font-size: var(--font-size-md); }
+h5 { font-size: var(--font-size-base); }
+h6 { font-size: var(--font-size-sm); }
+
+p {
+  margin-bottom: var(--space-md);
+  color: var(--slate-800);
+  font-weight: 400;
+}
+
+p.lead {
+  font-size: var(--font-size-md);
+  line-height: var(--lh-relaxed);
+}
+
+small, .text-sm {
+  font-size: var(--font-size-sm);
+}
+
+.text-xs {
+  font-size: var(--font-size-xs);
+}
+
+.text-mono {
+  font-family: var(--font-mono);
+}
+
+.font-semibold { font-weight: 600; }
+.font-bold { font-weight: 700; }
+
+/* Accessible Focus States */
+:focus {
+  outline: 2px solid var(--forest-600);
+  outline-offset: 2px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--forest-600);
+  outline-offset: 2px;
+}
+
+/* Form Resets & Controls */
+input,
+select,
+textarea,
+button {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="search"],
+select,
+textarea {
+  width: 100%;
+  padding: 10px 14px;
+  background-color: #FFFFFF;
+  border: 1px solid var(--sage-500);
+  border-radius: var(--radius);
+  color: var(--slate-800);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+input:hover,
+select:hover,
+textarea:hover {
+  border-color: var(--forest-600);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--forest-600);
+  box-shadow: 0 0 0 3px rgba(90, 122, 104, 0.25);
+  outline: none;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--slate-600);
+  opacity: 0.8;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+/* Table Resets */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+th, td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--sage-200);
+}
+
+th {
+  background-color: var(--slate-800);
+  color: #FFFFFF;
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-honeydew);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--sage-500);
+  border-radius: var(--radius-sm);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--forest-600);
+}
+
+/* Utility Helpers */
+.hidden { display: none !important; }
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-0: 0;
+}
+
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.gap-xs { gap: var(--space-xs); }
+.gap-sm { gap: var(--space-sm); }
+.gap-md { gap: var(--space-md); }
+.gap-lg { gap: var(--space-lg); }
+
+/* Field & Tablet Adjustments */
+@media (max-width: 1024px) {
+  body {
+    font-size: 16px;
+  }
+
+  button, input, select {
+    min-height: 44px; /* WCAG touch target recommendation */
+  }
+}

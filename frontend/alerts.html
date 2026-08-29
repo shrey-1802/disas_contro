@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Emergency alert inbox and command action center for disaster response operators.">
+  <title>Alerts & Command Center — Relief Supply Chain Platform</title>
+
+  <!-- Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- CSS Architecture -->
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header" id="app-header"></header>
+
+    <div class="app-body">
+      <nav class="app-nav" id="app-nav" aria-label="Operational Navigation"></nav>
+
+      <main class="app-main" id="main-content">
+        <header style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <h1>Alerts & Command Center</h1>
+            <p class="text-sm" style="color:var(--slate-600);">Operational alert inbox, severity escalations, and command room acknowledgment actions.</p>
+          </div>
+          <div>
+            <button class="button button--secondary">Clear Acknowledged</button>
+          </div>
+        </header>
+
+        <!-- Alerts List -->
+        <div style="display:flex; flex-direction:column; gap:var(--space-md);" id="alerts-container">
+          <!-- Critical Alert -->
+          <div class="card card--critical">
+            <div class="card__header">
+              <div class="flex items-center gap-sm">
+                <span class="priority-badge priority-badge--critical">CRITICAL SEVERITY</span>
+                <h3 class="card__title" style="font-size:var(--font-size-base);">Convoy 14 Path Stranded Risk — Sector 6</h3>
+              </div>
+              <span class="text-xs" style="color:var(--slate-600);">3 mins ago</span>
+            </div>
+            <p class="text-sm">Bridge B-14 closed due to 1.4m water depth. Convoy 14 carrying refrigerated insulin requires rerouting approval to bypass damaged bridge via Route D.</p>
+            <div class="flex items-center justify-between" style="margin-top:var(--space-md);">
+              <a href="live-map.html?convoy=CV-014" class="button button--secondary text-xs">🗺️ Locate on Map</a>
+              <div class="flex gap-sm">
+                <button class="button button--secondary text-xs" id="btn-ack-1">Acknowledge</button>
+                <button class="button button--critical text-xs" id="btn-esc-1">Escalate to District Command</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Warning Alert -->
+          <div class="card card--warning">
+            <div class="card__header">
+              <div class="flex items-center gap-sm">
+                <span class="priority-badge priority-badge--high">WARNING</span>
+                <h3 class="card__title" style="font-size:var(--font-size-base);">Shelter 06 Medical Reserve Depletion Risk</h3>
+              </div>
+              <span class="text-xs" style="color:var(--slate-600);">28 mins ago</span>
+            </div>
+            <p class="text-sm">Insulin inventory estimated remaining under 12 hours. Priority dispatch CV-014 pending arrival.</p>
+            <div class="flex items-center justify-between" style="margin-top:var(--space-md);">
+              <a href="shelter-board.html" class="button button--secondary text-xs">🏠 Open Shelter Board</a>
+              <div class="flex gap-sm">
+                <button class="button button--secondary text-xs" id="btn-ack-2">Acknowledge</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script type="module" src="js/pages/alerts.js"></script>
+</body>
+</html>
