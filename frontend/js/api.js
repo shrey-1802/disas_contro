@@ -5,8 +5,11 @@ import {
   normalizeShelter,
   normalizeMission,
   normalizeReport,
-  normalizeAlert
+  normalizeAlert,
+  normalizeInventory,
+  normalizeSupplySwap
 } from './adapters.js';
+
 
 export const API_BASE_URL = window.location.origin.includes('localhost')
   ? 'http://localhost:3000'
@@ -111,6 +114,53 @@ export const ApiService = {
     }
     return res;
   },
+
+  async getInventory() {
+    const res = await request('/api/inventory');
+    if (res.status === API_STATUS.SUCCESS && Array.isArray(res.data)) {
+      res.data = res.data.map(normalizeInventory);
+    } else {
+      res.data = [
+        normalizeInventory({ id: 'INV-101', name: 'Refrigerated Insulin', category: 'Medical', physicalCount: 250, reservedCount: 50, warehouse: 'Regional Warehouse Alpha' }),
+        normalizeInventory({ id: 'INV-102', name: 'Whole Blood Bags (O-)', category: 'Medical', physicalCount: 120, reservedCount: 20, warehouse: 'Regional Warehouse Alpha' }),
+        normalizeInventory({ id: 'INV-103', name: 'Infant Nutrition Formula', category: 'Nutrition', physicalCount: 450, reservedCount: 100, warehouse: 'Regional Warehouse Alpha' }),
+        normalizeInventory({ id: 'INV-104', name: 'Potable Water Drums (20L)', category: 'Water', physicalCount: 1200, reservedCount: 300, warehouse: 'Regional Warehouse Alpha' }),
+        normalizeInventory({ id: 'INV-105', name: 'Hygiene & Sanitation Kits', category: 'General', physicalCount: 800, reservedCount: 150, warehouse: 'Regional Warehouse Alpha' })
+      ];
+      res.status = API_STATUS.SUCCESS;
+    }
+    return res;
+  },
+
+  async getSupplySwaps() {
+    const res = await request('/api/swaps');
+    if (res.status === API_STATUS.SUCCESS && Array.isArray(res.data)) {
+      res.data = res.data.map(normalizeSupplySwap);
+    } else {
+      res.data = [
+        normalizeSupplySwap({ id: 'SW-101', sourceWarehouse: 'Regional Warehouse Alpha', targetDestination: 'Shelter 06 (East Valley)', supplyItem: 'Refrigerated Insulin', quantity: 40, unit: 'vials', urgencyHoursRemaining: 4, routeFeasibility: 'CAUTION', status: 'PENDING_APPROVAL' }),
+        normalizeSupplySwap({ id: 'SW-102', sourceWarehouse: 'Regional Warehouse Alpha', targetDestination: 'Shelter 02 (Gymnasium)', supplyItem: 'Whole Blood Bags (O-)', quantity: 15, unit: 'units', urgencyHoursRemaining: 8, routeFeasibility: 'SAFE', status: 'APPROVED' }),
+        normalizeSupplySwap({ id: 'SW-103', sourceWarehouse: 'Warehouse Bravo (Sector 2)', targetDestination: 'Regional Warehouse Alpha', supplyItem: 'Infant Nutrition Formula', quantity: 100, unit: 'boxes', urgencyHoursRemaining: 14, routeFeasibility: 'SAFE', status: 'PENDING_APPROVAL' }),
+        normalizeSupplySwap({ id: 'SW-104', sourceWarehouse: 'Regional Warehouse Alpha', targetDestination: 'Shelter 09 (River Basin)', supplyItem: 'Potable Water Drums', quantity: 200, unit: 'drums', urgencyHoursRemaining: 2, routeFeasibility: 'BLOCKED', status: 'PENDING_APPROVAL' })
+      ];
+      res.status = API_STATUS.SUCCESS;
+    }
+    return res;
+  },
+
+  async createSupplySwap(swapData) {
+    return await request('/api/swaps', {
+      method: 'POST',
+      body: JSON.stringify(swapData)
+    });
+  },
+
+  async approveSupplySwap(swapId) {
+    return await request(`/api/swaps/${swapId}/approve`, {
+      method: 'POST'
+    });
+  },
+
 
   async createMission(missionData) {
     return await request('/api/missions', {

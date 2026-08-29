@@ -3,72 +3,84 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Live Situational Map - DISISSTA Platform</title>
+  <meta name="description" content="Live Situational Map — Real-Time Hazard-Aware Route Intelligence & GIS Operations Center.">
+  <title>Live Operations Map — DISISSTA Platform</title>
+
+  <!-- Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- CSS Architecture -->
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/layout.css">
+  
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
 </head>
 <body>
   <div class="app-shell">
-    <header class="topbar" id="app-topbar"></header>
-    <nav class="sidebar" id="app-sidebar"></nav>
+    <header class="app-header" id="app-header"></header>
 
-    <main class="app-content" style="padding: 0;">
-      <div class="map-page-wrapper">
-        <!-- Left Panel: Layers & Filters -->
-        <aside class="map-sidebar-left">
-          <h2 style="font-size: 1.1rem; margin-bottom: var(--space-sm);">Map Layers & Controls</h2>
-          
-          <div style="margin-bottom: var(--space-md);">
-            <input type="text" id="map-search" placeholder="Search Convoy, Shelter, Region...">
-          </div>
+    <div class="app-body">
+      <nav class="app-nav" id="app-nav" aria-label="Operational Navigation"></nav>
 
-          <div style="margin-bottom: var(--space-md); display: flex; flex-direction: column; gap: 8px;">
-            <strong style="font-size: 0.85rem; text-transform: uppercase; color: var(--slate-700);">Overlays</strong>
-            <label style="display: flex; align-items: center; gap: 8px;">
-              <input type="checkbox" id="layer-floods" checked> Flood Depth Zones
-            </label>
-            <label style="display: flex; align-items: center; gap: 8px;">
-              <input type="checkbox" id="layer-debris" checked> Debris Flows & Closures
-            </label>
-            <label style="display: flex; align-items: center; gap: 8px;">
-              <input type="checkbox" id="layer-bridges" checked> Unsafe Bridges
-            </label>
-            <label style="display: flex; align-items: center; gap: 8px;">
-              <input type="checkbox" id="layer-convoys" checked> Active Relief Convoys
-            </label>
-            <label style="display: flex; align-items: center; gap: 8px;">
-              <input type="checkbox" id="layer-shelters" checked> Emergency Shelters
-            </label>
-          </div>
-
-          <div style="margin-bottom: var(--space-md);">
-            <strong style="font-size: 0.85rem; text-transform: uppercase; color: var(--slate-700);">Legend</strong>
-            <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 6px; font-size: 0.85rem;">
-              <div>🟢 <strong>SAFE Route</strong> (Clear arterial link)</div>
-              <div>🟡 <strong>CAUTION</strong> (Degraded / Rerouted)</div>
-              <div>🛑 <strong>BLOCKED</strong> (Submerged / Impassable)</div>
-              <div>🚚 <strong>Relief Convoy</strong> (Forest Arrow)</div>
-              <div>⛺ <strong>Emergency Shelter</strong> (Home Icon)</div>
+      <main class="app-main" id="main-content" style="padding: 0;">
+        <div class="map-page-wrapper">
+          <!-- Left Panel: Layers & Filters -->
+          <aside class="map-sidebar-left">
+            <h2 style="font-size: 1.1rem; margin-bottom: var(--space-sm);">Map Layers & Controls</h2>
+            
+            <div style="margin-bottom: var(--space-md);">
+              <input type="text" id="map-search" placeholder="Search Convoy, Shelter, Region...">
             </div>
-          </div>
-        </aside>
 
-        <!-- Central Map -->
-        <div class="map-container" id="map-canvas"></div>
+            <div style="margin-bottom: var(--space-md); display: flex; flex-direction: column; gap: 8px;">
+              <strong style="font-size: 0.85rem; text-transform: uppercase; color: var(--slate-700);">Overlays</strong>
+              <label style="display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" id="layer-floods" checked> Flood Depth Zones
+              </label>
+              <label style="display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" id="layer-debris" checked> Debris Flows & Closures
+              </label>
+              <label style="display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" id="layer-bridges" checked> Unsafe Bridges
+              </label>
+              <label style="display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" id="layer-convoys" checked> Active Relief Convoys
+              </label>
+              <label style="display: flex; align-items: center; gap: 8px;">
+                <input type="checkbox" id="layer-shelters" checked> Emergency Shelters
+              </label>
+            </div>
 
-        <!-- Right Panel: Selected Item Detail -->
-        <aside class="map-sidebar-right" id="map-detail-panel">
-          <h2 style="font-size: 1.1rem; margin-bottom: var(--space-sm);">Selected Entity</h2>
-          <div id="detail-panel-content">
-            <p style="color: var(--slate-700);">Click any convoy, shelter, or hazard marker on the map to inspect operational intelligence.</p>
-          </div>
-        </aside>
-      </div>
-    </main>
+            <div style="margin-bottom: var(--space-md);">
+              <strong style="font-size: 0.85rem; text-transform: uppercase; color: var(--slate-700);">Legend</strong>
+              <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 6px; font-size: 0.85rem;">
+                <div>🟢 <strong>SAFE Route</strong> (Clear arterial link)</div>
+                <div>🟡 <strong>CAUTION</strong> (Degraded / Rerouted)</div>
+                <div>🛑 <strong>BLOCKED</strong> (Submerged / Impassable)</div>
+                <div>🚚 <strong>Relief Convoy</strong> (Forest Arrow)</div>
+                <div>⛺ <strong>Emergency Shelter</strong> (Home Icon)</div>
+              </div>
+            </div>
+          </aside>
+
+          <!-- Central Map -->
+          <div class="map-container" id="map-canvas"></div>
+
+          <!-- Right Panel: Selected Item Detail -->
+          <aside class="map-sidebar-right" id="map-detail-panel">
+            <h2 style="font-size: 1.1rem; margin-bottom: var(--space-sm);">Selected Entity</h2>
+            <div id="detail-panel-content">
+              <p style="color: var(--slate-700);">Click any convoy, shelter, or hazard marker on the map to inspect operational intelligence.</p>
+            </div>
+          </aside>
+        </div>
+      </main>
+    </div>
   </div>
 
   <!-- Leaflet JS -->

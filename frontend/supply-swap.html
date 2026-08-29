@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Supply Swap & Surplus Matching Center — Warehouse Manager Operations & Regional Relief Inventory Transfer.">
+  <title>Supply Swap & Surplus Matching — DISISSTA Platform</title>
+
+  <!-- Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- CSS Architecture -->
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+
+  <style>
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: var(--space-md);
+      margin-bottom: var(--space-lg);
+    }
+    .kpi-card {
+      background-color: var(--white);
+      border: 1px solid var(--slate-300);
+      border-radius: var(--radius);
+      padding: var(--space-md);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform var(--transition-fast), border-color var(--transition-fast);
+      cursor: pointer;
+    }
+    .kpi-card:hover {
+      border-color: var(--forest-600);
+      transform: translateY(-2px);
+    }
+    .kpi-card__title {
+      font-size: var(--font-size-xs);
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--slate-700);
+      margin-bottom: 4px;
+    }
+    .kpi-card__value {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--slate-900);
+    }
+    .swap-card-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-md);
+    }
+    .swap-item-card {
+      background: var(--white);
+      border: 1px solid var(--slate-300);
+      border-radius: var(--radius);
+      padding: var(--space-md);
+      display: grid;
+      grid-template-columns: 1.5fr 1fr 1fr 1fr auto;
+      align-items: center;
+      gap: var(--space-md);
+    }
+    @media (max-width: 900px) {
+      .swap-item-card {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header" id="app-header"></header>
+
+    <div class="app-body">
+      <nav class="app-nav" id="app-nav" aria-label="Operational Navigation"></nav>
+
+      <main class="app-main" id="main-content">
+        <header style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <h1>Supply Swap & Surplus Matching</h1>
+            <p class="text-sm" style="color:var(--slate-600);">Warehouse Manager decisions: Match regional warehouse surpluses with urgent shelter shortages before time-to-harm expires.</p>
+          </div>
+          <div>
+            <button class="button button--primary" id="btn-create-swap">🔄 Initiate Supply Swap Offer</button>
+          </div>
+        </header>
+
+        <!-- KPI Metrics Grid -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-card__title">Transferable Inventory</div>
+            <div class="kpi-card__value" id="kpi-inventory">2,480 <span style="font-size:0.9rem; font-weight:normal;">units</span></div>
+            <div class="text-xs" style="color:var(--forest-700); margin-top:4px;">● 87% Healthy Operational Status</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-card__title">Critical Shortage Requests</div>
+            <div class="kpi-card__value" style="color:var(--slate-900);" id="kpi-requests">03</div>
+            <div class="text-xs" style="color:var(--slate-700); margin-top:4px;">⚡ &lt; 4 Hours Time-to-Harm</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-card__title">Surplus Swap Matches</div>
+            <div class="kpi-card__value" style="color:var(--forest-800);" id="kpi-matches">07</div>
+            <div class="text-xs" style="color:var(--slate-700); margin-top:4px;">Ready for immediate dispatch</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-card__title">Active Transfers</div>
+            <div class="kpi-card__value" id="kpi-transfers">04</div>
+            <div class="text-xs" style="color:var(--slate-700); margin-top:4px;">En route to destination shelters</div>
+          </div>
+        </div>
+
+        <!-- Filter & Sort Bar -->
+        <div class="filter-bar" style="flex-wrap: wrap;">
+          <div class="flex items-center gap-sm">
+            <span class="text-xs font-bold uppercase">Urgency Tier:</span>
+            <select style="width:auto;" id="filter-urgency">
+              <option value="all">All Urgencies</option>
+              <option value="critical">Critical (&lt; 4h Time-to-Harm)</option>
+              <option value="warning">Warning (4h – 12h)</option>
+              <option value="standard">Standard (&gt; 12h)</option>
+            </select>
+          </div>
+
+          <div class="flex items-center gap-sm">
+            <span class="text-xs font-bold uppercase">Supply Category:</span>
+            <select style="width:auto;" id="filter-category">
+              <option value="all">All Supplies</option>
+              <option value="insulin">Insulin / Blood (Tier 1)</option>
+              <option value="nutrition">Infant Nutrition (Tier 2)</option>
+              <option value="water">Clean Water (Tier 3)</option>
+              <option value="general">General Supplies (Tier 4)</option>
+            </select>
+          </div>
+
+          <div class="flex items-center gap-sm">
+            <span class="text-xs font-bold uppercase">Route Feasibility:</span>
+            <select style="width:auto;" id="filter-route-status">
+              <option value="all">All Routes</option>
+              <option value="SAFE">SAFE (Clear Corridor)</option>
+              <option value="CAUTION">CAUTION (Reroute Required)</option>
+              <option value="BLOCKED">BLOCKED (Impassable)</option>
+            </select>
+          </div>
+
+          <div class="flex items-center gap-sm" style="margin-left: auto;">
+            <span class="text-xs font-bold uppercase">Swap Status:</span>
+            <select style="width:auto;" id="filter-swap-status">
+              <option value="all">All Swap States</option>
+              <option value="PENDING_APPROVAL">Pending Approval</option>
+              <option value="APPROVED">Approved / En Route</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Supply Swap Requests Container -->
+        <div class="swap-card-list" id="supply-swap-list">
+          <!-- Loaded dynamically via supplySwap.js -->
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Create New Supply Swap Offer Modal -->
+  <div id="modal-create-swap" class="modal-overlay" style="display: none;">
+    <div class="modal" style="max-width: 580px;">
+      <header class="modal__header">
+        <h3 style="margin:0; font-size:var(--font-size-md);">🔄 Initiate Regional Supply Swap</h3>
+        <button id="btn-close-swap-modal" style="background:none; border:none; color:#FFF; font-size:20px; cursor:pointer;">✕</button>
+      </header>
+      <form id="form-create-swap">
+        <div class="modal__body" style="display:flex; flex-direction:column; gap:var(--space-md);">
+          <div>
+            <label class="font-semibold text-xs uppercase" style="color:var(--slate-800); display:block; margin-bottom:4px;">Target Destination (Shelter / Regional Warehouse) *</label>
+            <select id="input-target-destination" required style="width:100%;">
+              <option value="Shelter 06 (East Valley)">Shelter 06 (East Valley Sector 4 - Insulin Shortage)</option>
+              <option value="Shelter 02 (Gymnasium)">Shelter 02 (Central Sector 1 - Blood Shortage)</option>
+              <option value="Shelter 09 (River Basin)">Shelter 09 (Sector 6 - Water Shortage)</option>
+              <option value="Warehouse Bravo (Sector 2)">Warehouse Bravo (Regional Depot)</option>
+            </select>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-md);">
+            <div>
+              <label class="font-semibold text-xs uppercase" style="color:var(--slate-800); display:block; margin-bottom:4px;">Surplus Supply Item *</label>
+              <select id="input-supply-item" required style="width:100%;">
+                <option value="Refrigerated Insulin">Refrigerated Insulin (Vials)</option>
+                <option value="Whole Blood Bags (O-)">Whole Blood Bags (O-)</option>
+                <option value="Infant Nutrition Formula">Infant Nutrition Formula (Boxes)</option>
+                <option value="Potable Water Drums (20L)">Potable Water Drums (20L)</option>
+                <option value="Hygiene & Sanitation Kits">Hygiene & Sanitation Kits</option>
+              </select>
+            </div>
+            <div>
+              <label class="font-semibold text-xs uppercase" style="color:var(--slate-800); display:block; margin-bottom:4px;">Transfer Quantity *</label>
+              <input type="number" id="input-quantity" min="1" max="1000" value="50" required style="width:100%;">
+            </div>
+          </div>
+
+          <div>
+            <label class="font-semibold text-xs uppercase" style="color:var(--slate-800); display:block; margin-bottom:4px;">Estimated Time-to-Harm Urgency (Hours) *</label>
+            <input type="number" id="input-urgency-hours" min="1" max="72" value="4" required style="width:100%;">
+            <p class="text-xs" style="color:var(--slate-700); margin-top:2px;">Specify hours remaining before destination experiences critical shortage harm.</p>
+          </div>
+        </div>
+        <footer class="modal__footer">
+          <button type="button" class="button button--secondary" id="btn-cancel-swap">Cancel</button>
+          <button type="submit" class="button button--primary">Publish Supply Swap Offer</button>
+        </footer>
+      </form>
+    </div>
+  </div>
+
+  <script type="module" src="js/pages/supplySwap.js"></script>
+</body>
+</html>

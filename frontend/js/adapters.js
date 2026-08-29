@@ -109,3 +109,37 @@ export function normalizeAlert(raw = {}) {
     escalated: Boolean(raw.escalated)
   };
 }
+
+export function normalizeInventory(raw = {}) {
+  return {
+    id: raw.id || raw.item_id || `inv-${Math.random()}`,
+    name: raw.name || raw.item_name || 'Relief Supplies',
+    category: raw.category || 'Medical',
+    physicalCount: Number(raw.physicalCount || raw.total_qty || 0),
+    reservedCount: Number(raw.reservedCount || raw.reserved_qty || 0),
+    transferableCount: Number(raw.transferableCount || (Number(raw.physicalCount || 0) - Number(raw.reservedCount || 0))),
+    unit: raw.unit || 'units',
+    warehouse: raw.warehouse || 'Regional Warehouse Alpha',
+    healthStatus: raw.healthStatus || (Number(raw.physicalCount) > 50 ? 'HEALTHY' : 'LOW'),
+    lastUpdated: raw.lastUpdated || raw.updated_at || new Date().toISOString()
+  };
+}
+
+export function normalizeSupplySwap(raw = {}) {
+  return {
+    id: raw.id || raw.swap_id || `SW-${Math.floor(100 + Math.random() * 900)}`,
+    sourceWarehouse: raw.sourceWarehouse || raw.origin_warehouse || 'Regional Warehouse Alpha',
+    targetDestination: raw.targetDestination || raw.target_name || 'Shelter 06',
+    destinationType: raw.destinationType || 'Shelter',
+    supplyItem: raw.supplyItem || raw.item_name || 'Refrigerated Insulin',
+    quantity: Number(raw.quantity || raw.qty || 40),
+    unit: raw.unit || 'doses',
+    urgencyHoursRemaining: Number(raw.urgencyHoursRemaining || raw.time_to_harm_hours || 4),
+    routeFeasibility: raw.routeFeasibility || 'CAUTION', // SAFE, CAUTION, BLOCKED
+    status: raw.status || 'PENDING_APPROVAL', // PENDING_APPROVAL, APPROVED, EN_ROUTE, COMPLETED, REJECTED
+    requester: raw.requester || raw.requesting_user || 'Shelter 06 Officer',
+    convoyId: raw.convoyId || null,
+    createdAt: raw.createdAt || raw.created_at || new Date().toISOString()
+  };
+}
+

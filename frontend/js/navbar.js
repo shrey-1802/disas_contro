@@ -4,6 +4,7 @@
  */
 
 import { auth, ROLES } from './auth.js';
+import { SearchUtil } from './search.js';
 
 export function renderGlobalShell(activePageFilename) {
   const currentRole = auth.getRole();
@@ -29,13 +30,13 @@ export function renderGlobalShell(activePageFilename) {
       <div class="app-header__center">
         <div class="search-bar">
           <span class="search-bar__icon">🔍</span>
-          <input type="search" id="global-search-input" placeholder="Search convoy ID, shelter, or hazard region..." aria-label="Global Operational Search">
+          <input type="search" id="global-search-input" placeholder="Search inventory, warehouse, convoy, shelter... (Ctrl+K)" aria-label="Global Operational Search">
         </div>
       </div>
 
       <div class="app-header__actions">
         <div class="sync-indicator" id="last-sync-indicator" title="System Synchronization Status">
-          <span>🔄</span> <span id="sync-timestamp-text">Synced 1m ago</span>
+          <span>🔄</span> <span id="sync-timestamp-text">Synced 12s ago</span>
         </div>
 
         <div class="connectivity-indicator connectivity-indicator--online" id="connectivity-indicator-badge">
@@ -55,6 +56,15 @@ export function renderGlobalShell(activePageFilename) {
     `;
 
     // Bind Header Events
+    document.getElementById('global-search-input')?.addEventListener('focus', () => {
+      const modal = SearchUtil.createModal();
+      if (modal) {
+        modal.style.display = 'flex';
+        const modalInput = modal.querySelector('#modal-search-input');
+        if (modalInput) modalInput.focus();
+      }
+    });
+
     document.getElementById('field-mode-toggle')?.addEventListener('click', () => {
       auth.toggleFieldMode();
       renderGlobalShell(activePageFilename);
@@ -65,16 +75,18 @@ export function renderGlobalShell(activePageFilename) {
     });
   }
 
+
   // Render Role-Based Navigation Sidebar
   const navElem = document.getElementById('app-nav');
   if (navElem) {
     const navItems = [
       { id: 'dashboard.html', label: 'Overview Dashboard', icon: '📊', roles: [ROLES.CONTROL_ROOM, ROLES.DISTRICT_ADMIN, ROLES.FIELD_DRIVER] },
-      { id: 'live-map.html', label: 'Live Situational Map', icon: '🗺️', roles: [ROLES.CONTROL_ROOM, ROLES.DISTRICT_ADMIN, ROLES.FIELD_DRIVER] },
+      { id: 'live-map.html', label: 'Live Operations Map', icon: '🗺️', roles: [ROLES.CONTROL_ROOM, ROLES.DISTRICT_ADMIN, ROLES.FIELD_DRIVER] },
+      { id: 'supply-swap.html', label: 'Supply Swap', icon: '🔄', badge: '07', roles: [ROLES.CONTROL_ROOM, ROLES.DISTRICT_ADMIN] },
       { id: 'convoy-dispatch.html', label: 'Convoy Dispatch', icon: '🚛', roles: [ROLES.CONTROL_ROOM, ROLES.DISTRICT_ADMIN] },
       { id: 'shelter-board.html', label: 'Shelter & Supply Board', icon: '🏠', roles: [ROLES.CONTROL_ROOM, ROLES.DISTRICT_ADMIN] },
       { id: 'hazard-log.html', label: 'Hazard & Incident Log', icon: '⚠️', roles: [ROLES.CONTROL_ROOM, ROLES.FIELD_DRIVER] },
-      { id: 'alerts.html', label: 'Alerts & Commands', icon: '🚨', roles: [ROLES.CONTROL_ROOM, ROLES.DISTRICT_ADMIN] },
+      { id: 'alerts.html', label: 'Alerts & Commands', icon: '🚨', badge: '03', roles: [ROLES.CONTROL_ROOM, ROLES.DISTRICT_ADMIN] },
       { id: 'settings.html', label: 'System Settings', icon: '⚙️', roles: [ROLES.CONTROL_ROOM, ROLES.DISTRICT_ADMIN, ROLES.FIELD_DRIVER] }
     ];
 
@@ -87,11 +99,13 @@ export function renderGlobalShell(activePageFilename) {
             <a href="${item.id}">
               <span class="app-nav__icon">${item.icon}</span>
               <span class="app-nav__label">${item.label}</span>
+              ${item.badge ? `<span class="priority-badge priority-badge--high" style="margin-left:auto; font-size:10px; padding:1px 6px;">${item.badge}</span>` : ''}
             </a>
           </li>
         `).join('')}
       </ul>
     `;
+
   }
 
   // Check & Render Persistent Critical Alert Banner

@@ -3,34 +3,37 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard - DISISSTA Platform</title>
+  <meta name="description" content="Warehouse Manager Decision Center — Inventory Health, Priority Shortage Actions, and Supply Swap Opportunities.">
+  <title>Warehouse Manager Decision Center — Relief Supply Chain System</title>
+
+  <!-- Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- CSS Architecture -->
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/components.css">
-  <link rel="stylesheet" href="css/layout.css">
 </head>
 <body>
   <div class="app-shell">
-    <header class="topbar" id="app-topbar"></header>
-    <nav class="sidebar" id="app-sidebar"></nav>
+    <header class="app-header" id="app-header"></header>
 
-    <main class="app-content">
-      <div id="critical-alert-banner" class="alert-banner alert-banner--critical" style="display: none;">
-        <span>⚠️ <strong>CRITICAL ALERT:</strong> <span id="banner-text">Convoy 14 stranded due to landslide in Sector 6.</span></span>
-        <a href="alerts.html" class="button button--secondary" style="font-size: 0.8rem; padding: 2px 8px;">View Alert</a>
-      </div>
+    <div class="app-body">
+      <nav class="app-nav" id="app-nav" aria-label="Operational Navigation"></nav>
 
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <div>
-          <h1 id="dashboard-title">Operational Overview</h1>
-          <p id="dashboard-subtitle" style="color: var(--slate-700);">Real-time status overview for emergency response personnel.</p>
+      <main class="app-main" id="main-content">
+        <header style="margin-bottom: var(--space-md);">
+          <h1 id="dashboard-title">Warehouse Manager Decision Center</h1>
+          <p id="dashboard-subtitle" style="color: var(--slate-700);">Regional Warehouse Alpha &bull; Real-time status overview for emergency response personnel.</p>
+        </header>
+
+        <div id="role-dashboard-container" style="display: grid; grid-template-columns: 1fr; gap: var(--space-md);">
+          <!-- Injected dynamically by dashboard.js -->
         </div>
-      </div>
-
-      <div id="role-dashboard-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--space-md);">
-        <!-- Injected dynamically by dashboard.js based on user role -->
-      </div>
-    </main>
+      </main>
+    </div>
   </div>
 
   <script type="module" src="js/pages/dashboard.js"></script>
