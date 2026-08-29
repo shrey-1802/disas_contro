@@ -40,6 +40,18 @@ document.addEventListener('DOMContentLoaded', () => {
   // Apply saved font scale
   applyFontScale(localStorage.getItem('font-scale') || 'standard');
 
+  // --- PHASE 13: DATA FRESHNESS DISPLAY ---
+  // Render and auto-refresh the system freshness badge in the top bar
+  let freshnessCleanup = null;
+  function refreshFreshnessBadge() {
+    const badgeEl = document.getElementById('system-freshness-badge');
+    if (!badgeEl || !window.FreshnessUtil) return;
+    const lastSyncStr = localStorage.getItem('last-sync-timestamp');
+    if (freshnessCleanup) freshnessCleanup();
+    freshnessCleanup = window.FreshnessUtil.startLiveClock(badgeEl, lastSyncStr || null, 'System');
+  }
+  refreshFreshnessBadge();
+
   // --- INTERACTION EVENT LISTENERS ---
 
   // Role Select Change (Instant updates)
@@ -244,6 +256,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (window.NavbarEngine) {
           window.NavbarEngine.updateConnectivity();
         }
+        // Refresh freshness badge to LIVE immediately
+        refreshFreshnessBadge();
         showToast('Synchronization task completed.');
       }
     }

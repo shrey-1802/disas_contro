@@ -498,3 +498,62 @@ input:checked + .slider:before {
   flex-shrink: 0;
 }
 
+/* -------------------------------------------------------------
+   8. FRESHNESS BADGES (Phase 13)
+   LIVE / RECENT / STALE / UNKNOWN
+   Always icon + text — never color alone.
+------------------------------------------------------------- */
+.freshness-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  letter-spacing: 0.01em;
+}
+
+/* LIVE: sage tone — data received within 60 seconds */
+.freshness-badge--live {
+  background-color: var(--sage-100);
+  color: var(--forest-700);
+  border-color: var(--sage-500);
+}
+
+/* RECENT: slightly deeper forest tone — data 1–5 minutes old */
+.freshness-badge--recent {
+  background-color: var(--forest-100);
+  color: var(--forest-700);
+  border-color: var(--forest-600);
+}
+
+/* STALE: slate tone — data older than 5 minutes */
+.freshness-badge--stale {
+  background-color: var(--slate-100);
+  color: var(--slate-900);
+  border-color: var(--slate-800);
+}
+
+/* UNKNOWN: neutral — no timestamp available */
+.freshness-badge--unknown {
+  background-color: var(--bg-honeydew);
+  color: var(--slate-800);
+  border-color: var(--slate-300);
+  font-style: italic;
+  font-weight: 500;
+}
+
+.freshness-label {
+  /* Ensure label text is always readable */
+  min-width: 0;
+}
+
+.freshness-source {
+  opacity: 0.75;
+  font-weight: 400;
+  font-size: 0.75rem;
+  margin-left: 2px;
+}
