@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - DISISSTA Platform</title>
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/layout.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar" id="app-topbar"></header>
+    <nav class="sidebar" id="app-sidebar"></nav>
+
+    <main class="app-content">
+      <div id="critical-alert-banner" class="alert-banner alert-banner--critical" style="display: none;">
+        <span>⚠️ <strong>CRITICAL ALERT:</strong> <span id="banner-text">Convoy 14 stranded due to landslide in Sector 6.</span></span>
+        <a href="alerts.html" class="button button--secondary" style="font-size: 0.8rem; padding: 2px 8px;">View Alert</a>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <h1 id="dashboard-title">Operational Overview</h1>
+          <p id="dashboard-subtitle" style="color: var(--slate-700);">Real-time status overview for emergency response personnel.</p>
+        </div>
+      </div>
+
+      <div id="role-dashboard-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--space-md);">
+        <!-- Injected dynamically by dashboard.js based on user role -->
+      </div>
+    </main>
+  </div>
+
+  <script type="module" src="js/pages/dashboard.js"></script>
+</body>
+</html>

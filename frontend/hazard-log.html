@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Reverse-chronological hazard and incident feed with field reporting capabilities and offline synchronization queue.">
+  <title>Hazard Log & Field Reporting — Relief Supply Chain Platform</title>
+
+  <!-- Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- CSS Architecture -->
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+
+  <style>
+    /* Glove-friendly mobile-first form controls (min 44px height) */
+    .glove-friendly-input,
+    .glove-friendly-select,
+    .glove-friendly-btn {
+      min-height: 48px !important;
+      font-size: var(--font-size-base) !important;
+      padding: 10px 16px !important;
+    }
+    .sync-banner {
+      background-color: var(--sage-200);
+      color: var(--slate-900);
+      border: 1px solid var(--sage-500);
+      padding: var(--space-sm) var(--space-md);
+      border-radius: var(--radius);
+      margin-bottom: var(--space-md);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header" id="app-header"></header>
+
+    <div class="app-body">
+      <nav class="app-nav" id="app-nav" aria-label="Operational Navigation"></nav>
+
+      <main class="app-main" id="main-content">
+        <header style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <h1>Hazard & Incident Log</h1>
+            <p class="text-sm" style="color:var(--slate-600);">Field hazard reporting timeline, environmental sensors, bridge status, and verification workflow.</p>
+          </div>
+          <div>
+            <button class="button button--primary glove-friendly-btn" id="btn-open-report-modal">⚠️ Log Field Hazard Incident</button>
+          </div>
+        </header>
+
+        <!-- Offline Sync Banner -->
+        <div id="offline-sync-banner" class="sync-banner" style="display: none;">
+          <div class="flex items-center gap-sm">
+            <span style="font-size:18px;">⚡</span>
+            <div>
+              <strong id="sync-banner-title">Saved locally — Pending synchronization</strong>
+              <div class="text-xs" id="sync-banner-subtitle" style="color:var(--slate-700);">Reports queued on device will auto-sync when field connectivity restores.</div>
+            </div>
+          </div>
+          <button id="btn-manual-sync" class="button button--secondary text-xs" style="background:#FFF;">Retry Sync Now</button>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="filter-bar" style="flex-wrap: wrap;">
+          <div class="flex items-center gap-sm">
+            <span class="text-xs font-bold uppercase">Hazard Type:</span>
+            <select style="width:auto;" id="filter-hazard-type">
+              <option value="all">All Hazard Types</option>
+              <option value="flood">Flood</option>
+              <option value="debris">Debris Slide</option>
+              <option value="bridge">Bridge Failure</option>
+              <option value="road">Road Closure</option>
+            </select>
+          </div>
+
+          <div class="flex items-center gap-sm">
+            <span class="text-xs font-bold uppercase">Region:</span>
+            <select style="width:auto;" id="filter-region">
+              <option value="all">All Regions</option>
+              <option value="Sector 6">Sector 6</option>
+              <option value="Sector 2">Sector 2</option>
+              <option value="East Valley">East Valley</option>
+              <option value="Central">Central District</option>
+            </select>
+          </div>
+
+          <div class="flex items-center gap-sm">
+            <span class="text-xs font-bold uppercase">Source:</span>
+            <select style="width:auto;" id="filter-source">
+              <option value="all">All Sources</option>
+              <option value="Sensor">Sensor</option>
+              <option value="Field Report">Field Report</option>
+              <option value="Satellite">Satellite</option>
+              <option value="Manual Entry">Manual Entry</option>
+            </select>
+          </div>
+
+          <div class="flex items-center gap-sm" style="margin-left: auto;">
+            <span class="text-xs font-bold uppercase">Verification:</span>
+            <select style="width:auto;" id="filter-status">
+              <option value="all">All Statuses</option>
+              <option value="unverified">Unverified Only</option>
+              <option value="verified">Verified Only</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Incident Timeline Feed (Reverse Chronological) -->
+        <div style="display:flex; flex-direction:column; gap:var(--space-md);" id="hazard-feed">
+          <!-- Loaded dynamically via hazardLog.js -->
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Mobile-First Outdoor Field Report Modal (Glove-Friendly Touch Targets >= 44px) -->
+  <div id="modal-hazard-report" class="modal-overlay" style="display: none;">
+    <div class="modal" style="max-width: 580px;">
+      <header class="modal__header">
+        <h3 style="margin:0; font-size:var(--font-size-md);">⚠️ Log Field Hazard Incident</h3>
+        <button id="btn-close-report-modal" style="background:none; border:none; color:#FFF; font-size:22px; cursor:pointer; min-width:44px; min-height:44px;">✕</button>
+      </header>
+      <form id="form-hazard-report">
+        <div class="modal__body" style="display:flex; flex-direction:column; gap:var(--space-md);">
+          <div>
+            <label class="font-semibold text-xs uppercase" style="color:var(--slate-800); display:block; margin-bottom:6px;">Geolocation / Location Sector *</label>
+            <div style="display:flex; gap:var(--space-xs);">
+              <input type="text" id="input-hazard-location" class="glove-friendly-input" placeholder="e.g. Sector 6 (Bridge B-14 Approach)" required style="flex:1;">
+              <button type="button" id="btn-detect-gps" class="button button--secondary glove-friendly-btn" title="Detect GPS Coordinates">📍 GPS</button>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-md);">
+            <div>
+              <label class="font-semibold text-xs uppercase" style="color:var(--slate-800); display:block; margin-bottom:6px;">Hazard Type *</label>
+              <select id="input-hazard-type" class="glove-friendly-select" required style="width:100%;">
+                <option value="Flood">Flood Water</option>
+                <option value="Debris">Debris Slide</option>
+                <option value="Bridge">Bridge Damage</option>
+                <option value="Road Closure">Road Obstruction</option>
+              </select>
+            </div>
+            <div>
+              <label class="font-semibold text-xs uppercase" style="color:var(--slate-800); display:block; margin-bottom:6px;">Severity Tier *</label>
+              <select id="input-hazard-severity" class="glove-friendly-select" required style="width:100%;">
+                <option value="Critical">Critical (Impassable)</option>
+                <option value="Warning">Warning (Degraded)</option>
+                <option value="Caution">Caution (Slow Pass)</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="font-semibold text-xs uppercase" style="color:var(--slate-800); display:block; margin-bottom:6px;">Field Description & Observations *</label>
+            <textarea id="input-hazard-description" class="glove-friendly-input" rows="3" placeholder="Describe water depth, blockage width, or vehicle clearance restrictions..." required style="width:100%; height:auto;"></textarea>
+          </div>
+
+          <div>
+            <label class="font-semibold text-xs uppercase" style="color:var(--slate-800); display:block; margin-bottom:6px;">Photo Attachment (Optional)</label>
+            <input type="file" id="input-hazard-photo" accept="image/*" class="glove-friendly-input" style="width:100%;">
+          </div>
+        </div>
+        <footer class="modal__footer">
+          <button type="button" class="button button--secondary glove-friendly-btn" id="btn-cancel-report">Cancel</button>
+          <button type="submit" class="button button--primary glove-friendly-btn" style="min-width:160px;">Submit Field Report</button>
+        </footer>
+      </form>
+    </div>
+  </div>
+
+  <script type="module" src="js/pages/hazardLog.js"></script>
+</body>
+</html>
