@@ -557,3 +557,600 @@ input:checked + .slider:before {
   font-size: 0.75rem;
   margin-left: 2px;
 }
+
+/* =============================================================
+   9. LOADING STATES (Phase 14)
+   Skeleton loaders for cards, tables, maps.
+   Loading must NEVER look like an error state.
+============================================================= */
+
+/* --- Shimmer animation keyframe --- */
+@keyframes shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position:  600px 0; }
+}
+
+/* --- Skeleton base (applied to any placeholder element) --- */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--sage-100) 25%,
+    var(--bg-honeydew) 50%,
+    var(--sage-100) 75%
+  );
+  background-size: 600px 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+  border-radius: var(--radius);
+  display: block;
+}
+
+/* Skeleton text lines */
+.skeleton-line {
+  height: 14px;
+  margin-bottom: 10px;
+}
+.skeleton-line--short  { width: 40%; }
+.skeleton-line--medium { width: 65%; }
+.skeleton-line--long   { width: 90%; }
+.skeleton-line--full   { width: 100%; }
+
+/* Skeleton heading */
+.skeleton-heading {
+  height: 20px;
+  width: 50%;
+  margin-bottom: 14px;
+}
+
+/* Skeleton circle (avatar / icon placeholder) */
+.skeleton-circle {
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+}
+
+/* --- Card Skeleton --- */
+.skeleton-card {
+  background-color: var(--white);
+  border: 1px solid var(--sage-100);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.skeleton-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+/* --- Table Row Skeleton --- */
+.skeleton-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.skeleton-table-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--sage-100);
+}
+
+.skeleton-table-cell {
+  flex: 1;
+}
+
+/* --- Map Loading Overlay --- */
+.map-loading-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(237, 243, 224, 0.88); /* --bg-honeydew with alpha */
+  z-index: 500;
+  gap: 14px;
+}
+
+.map-loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--sage-100);
+  border-top-color: var(--forest-600);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+.map-loading-label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--forest-600);
+  letter-spacing: 0.01em;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* --- Inline Page Loading State (full content-area overlay) --- */
+.page-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 80px 24px;
+  color: var(--forest-600);
+}
+
+.page-loading-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--sage-100);
+  border-top-color: var(--forest-600);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+.page-loading-label {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--forest-600);
+}
+
+.page-loading-sub {
+  font-size: 0.85rem;
+  color: var(--slate-800);
+  opacity: 0.7;
+}
+
+/* --- Loading button state --- */
+.button--loading {
+  pointer-events: none;
+  opacity: 0.75;
+}
+
+.button--loading::after {
+  content: '';
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  margin-left: 8px;
+  animation: spin 0.7s linear infinite;
+  vertical-align: middle;
+}
+
+/* =============================================================
+   10. EMPTY STATES (Phase 15)
+   Meaningful, factual empty states — no "Nothing here!"
+   No exclamation marks. Copy is operational and direct.
+============================================================= */
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 64px 24px;
+  text-align: center;
+  color: var(--slate-800);
+}
+
+.empty-state-icon {
+  color: var(--sage-500);
+  opacity: 0.7;
+  margin-bottom: 4px;
+}
+
+.empty-state-headline {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--slate-800);
+  margin-bottom: 0;
+}
+
+.empty-state-body {
+  font-size: 0.9rem;
+  color: var(--slate-800);
+  opacity: 0.75;
+  max-width: 420px;
+  line-height: 1.6;
+  margin-bottom: 4px;
+}
+
+.empty-state-action {
+  margin-top: 8px;
+}
+
+/* =============================================================
+   11. ERROR STATES (Phase 16)
+   Honest, specific error states. Three modes:
+   — Full error (no cached data)
+   — Stale cache (offline but data shown)
+   — Not implemented
+============================================================= */
+
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 64px 24px;
+  text-align: center;
+}
+
+.error-state-icon {
+  color: var(--slate-800);
+  opacity: 0.6;
+  margin-bottom: 4px;
+}
+
+.error-state-icon--warn {
+  color: var(--forest-600);
+  opacity: 0.8;
+}
+
+.error-state-headline {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--slate-800);
+  margin-bottom: 0;
+}
+
+.error-state-body {
+  font-size: 0.9rem;
+  color: var(--slate-800);
+  opacity: 0.75;
+  max-width: 420px;
+  line-height: 1.6;
+  margin-bottom: 4px;
+}
+
+.error-state-detail {
+  font-size: 0.85rem;
+  color: var(--slate-800);
+  opacity: 0.6;
+  font-family: monospace;
+  background: var(--sage-100);
+  padding: 4px 10px;
+  border-radius: var(--radius);
+}
+
+.error-state-retry {
+  margin-top: 8px;
+}
+
+/* Stale cache mode: muted appearance since data is still shown */
+.error-state--stale {
+  padding: 24px;
+  background: var(--bg-honeydew);
+  border-radius: var(--radius);
+  border: 1px solid var(--sage-100);
+}
+
+/* Offline mode */
+.error-state--offline {
+  background: var(--sage-100);
+  border: 1px solid var(--sage-500);
+  border-radius: var(--radius);
+  padding: 24px;
+}
+
+/* Not implemented */
+.error-state--not-implemented {
+  opacity: 0.8;
+}
+
+/* Inline error banner (non-blocking, sits above content) */
+.error-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  background-color: var(--slate-100);
+  border: 1px solid var(--slate-300);
+  border-radius: var(--radius);
+  margin-bottom: 16px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.error-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.error-banner-icon {
+  color: var(--slate-800);
+  flex-shrink: 0;
+}
+
+.error-banner-message {
+  color: var(--slate-800);
+}
+
+.error-banner-retry {
+  font-size: 0.85rem;
+  padding: 6px 14px;
+  min-height: 32px;
+}
+
+.error-banner-dismiss {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: var(--slate-800);
+  opacity: 0.6;
+  min-height: auto;
+  flex-shrink: 0;
+  border-radius: 4px;
+}
+
+.error-banner-dismiss:hover {
+  opacity: 1;
+  background: var(--slate-300);
+}
+
+/* =============================================================
+   12. SEARCH & FILTER (Phase 17)
+   Reusable search bar, filter bar, filter chips.
+============================================================= */
+
+/* Search input wrapper */
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--white);
+  border: 1px solid var(--sage-100);
+  border-radius: var(--radius);
+  padding: 0 12px;
+  min-height: var(--touch-target-min);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.search-bar:focus-within {
+  border-color: var(--forest-600);
+  box-shadow: 0 0 0 3px rgba(90, 122, 104, 0.15);
+}
+
+.search-bar-icon {
+  color: var(--sage-500);
+  flex-shrink: 0;
+}
+
+.search-bar input {
+  border: none;
+  background: transparent;
+  padding: 0;
+  flex: 1;
+  min-height: auto;
+  box-shadow: none;
+  font-size: 0.95rem;
+}
+
+.search-bar input:focus {
+  box-shadow: none;
+  border-color: transparent;
+}
+
+/* Filter bar (holds dropdowns + chips) */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 0;
+}
+
+.filter-select {
+  min-height: var(--touch-target-min);
+  padding: 8px 12px;
+  border: 1px solid var(--sage-100);
+  border-radius: var(--radius);
+  background: var(--white);
+  font-size: 0.9rem;
+  cursor: pointer;
+  /* Phase 19: no fixed width — must wrap for translated labels */
+  min-width: 120px;
+  max-width: 240px;
+}
+
+.filter-select:focus {
+  border-color: var(--forest-600);
+  box-shadow: 0 0 0 3px rgba(90, 122, 104, 0.15);
+}
+
+/* Active filter chips */
+.filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--forest-100);
+  border: 1px solid var(--forest-600);
+  border-radius: 16px;
+  padding: 4px 10px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--forest-900);
+  white-space: nowrap;
+}
+
+.filter-chip-label strong {
+  font-weight: 700;
+}
+
+.filter-chip-remove {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--forest-600);
+  min-height: auto;
+  min-width: auto;
+  display: flex;
+  align-items: center;
+  border-radius: 50%;
+  transition: color var(--transition-fast);
+}
+
+.filter-chip-remove:hover {
+  color: var(--forest-900);
+}
+
+/* Search highlight mark */
+mark.search-highlight {
+  background-color: rgba(143, 175, 140, 0.35);
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+/* =============================================================
+   13. ACCESSIBILITY (Phase 18)
+   WCAG 2.1 AA — screen reader only, skip link, touch targets,
+   focus visibility (global :focus-visible in base.css).
+============================================================= */
+
+/* Screen-reader only — visually hidden but accessible */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Skip to main content link — visible only on focus */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 8px;
+  z-index: 9999;
+  background: var(--slate-800);
+  color: var(--white);
+  padding: 10px 20px;
+  border-radius: 0 0 var(--radius) var(--radius);
+  font-weight: 700;
+  font-size: 0.95rem;
+  transition: top 0.15s ease;
+  outline: none;
+}
+
+.skip-link:focus {
+  top: 0;
+  outline: 3px solid var(--sage-500);
+  outline-offset: 2px;
+}
+
+/* Ensure all interactive elements meet 44×44 touch target (already in base.css
+   via --touch-target-min, reinforced here for custom components) */
+.nav-link,
+.filter-chip-remove,
+.critical-banner-close {
+  min-height: var(--touch-target-min);
+}
+
+/* Accessible status message region (used by A11yUtil.announce) */
+[aria-live] {
+  /* Invisible but present in accessibility tree */
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* High-contrast focus visible override for keyboard users */
+*:focus-visible {
+  outline: 2px solid var(--forest-600);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* =============================================================
+   14. MULTILINGUAL LAYOUT GUARDS (Phase 19)
+   Buttons and labels must NEVER use fixed widths.
+   All interactive elements must survive text expansion.
+============================================================= */
+
+/* Buttons: always use min-width + padding, never fixed width */
+.button {
+  /* Already set in section 2, reinforced here for documentation */
+  white-space: nowrap;        /* prevent awkward mid-word wraps */
+  /* Phase 19: min-width keeps short translated labels from collapsing */
+  min-width: 80px;
+}
+
+/* Status badges can expand for longer translated status words */
+.status-badge {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Navigation labels must wrap cleanly if translated string is longer */
+.nav-link {
+  white-space: normal;
+  word-break: break-word;
+}
+
+/* Form labels must not truncate */
+.form-group label,
+.switch-label {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* Table header cells must wrap, not overflow */
+th {
+  word-break: break-word;
+  white-space: normal;
+  min-width: 60px;
+}
+
+/* Filter selects expand, not clip */
+.filter-select option {
+  white-space: normal;
+}
+
+/* Cards must reflow, not overflow */
+.card {
+  overflow: hidden;
+  word-break: break-word;
+}
+
+/* Flex containers that hold buttons must wrap */
+.button-group,
+.filter-bar,
+.top-bar-stats,
+.filter-chips {
+  flex-wrap: wrap;
+}
+
