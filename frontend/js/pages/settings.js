@@ -91,10 +91,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (window.APIClient) {
           window.APIClient.triggerDegradedState('offline');
         }
+        if (window.SocketClient) {
+          window.SocketClient.disconnect();
+        }
         showToast('Simulated Offline Mode Active. Local edits will queue for sync.');
       } else {
         if (window.APIClient) {
           window.APIClient.clearDegradedState();
+        }
+        if (window.SocketClient) {
+          window.SocketClient.connect();
         }
         showToast('Simulated Online Mode Restored.');
         // Auto trigger sync on reconnecting
@@ -157,6 +163,54 @@ document.addEventListener('DOMContentLoaded', () => {
       if (window.SyncManager) {
         window.SyncManager.process();
       }
+    });
+  }
+
+  // Button to trigger manual simulated live socket event
+  const triggerMockBtn = document.getElementById('trigger-mock-event-btn');
+  if (triggerMockBtn) {
+    triggerMockBtn.addEventListener('click', () => {
+      const simulatedOffline = localStorage.getItem('simulated-offline') === 'true';
+      if (simulatedOffline) {
+        showToast('Cannot trigger live socket events while offline.', true);
+        return;
+      }
+      if (window.SocketClient) {
+        window.SocketClient.triggerRandomMockEvent();
+      }
+    });
+  }
+
+  // --- REAL-TIME SOCKET TOPIC SUBSCRIPTIONS ---
+  if (window.SocketClient) {
+    // 1. Listen for new alerts
+    window.SocketClient.subscribe('alert:new', (data) => {
+      showToast(`[Alert] ${data.title}: ${data.description}`);
+      
+      // Update global critical banner text dynamically if critical
+      const globalBanner = document.getElementById('global-critical-banner');
+      if (globalBanner) {
+        const bannerSpan = globalBanner.querySelector('.critical-banner-content span');
+        if (bannerSpan) {
+          bannerSpan.textContent = `CRITICAL: ${data.title} — ${data.description}`;
+        }
+        globalBanner.style.display = 'flex';
+      }
+    });
+
+    // 2. Listen for road closure updates
+    window.SocketClient.subscribe('road:update', (data) => {
+      showToast(`[Road Update] ${data.name}: ${data.message}`);
+    });
+
+    // 3. Listen for bridge hazard updates
+    window.SocketClient.subscribe('bridge:update', (data) => {
+      showToast(`[Bridge Warning] Bridge ${data.bridgeId}: ${data.message}`);
+    });
+
+    // 4. Listen for shelter demand updates
+    window.SocketClient.subscribe('shelter:demand_update', (data) => {
+      showToast(`[Shelter Alert] ${data.shelterId} capacity: ${data.population} people, ${data.daysOfSupply} days remaining.`);
     });
   }
 

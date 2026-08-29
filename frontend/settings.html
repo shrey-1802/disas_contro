@@ -188,6 +188,31 @@
           </div>
         </section>
 
+        <!-- Section: Real-Time Event Simulation -->
+        <section class="card">
+          <h3 class="settings-section-title">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+              <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+              <line x1="6" y1="6" x2="6.01" y2="6"></line>
+              <line x1="6" y1="18" x2="6.01" y2="18"></line>
+            </svg>
+            Live Event Simulator
+          </h3>
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 0;">
+            <div style="padding-right: 15px;">
+              <p style="font-weight: 600; margin-bottom: 2px;">Trigger Mock Live Socket Event</p>
+              <p style="font-size: 0.9rem; opacity: 0.8;">Broadcasts a random simulated incident (e.g. road closure, alert, or shelter demand update) to trigger active page listeners.</p>
+            </div>
+            <button id="trigger-mock-event-btn" class="button button--secondary" style="flex-shrink: 0;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              <span>Trigger Event</span>
+            </button>
+          </div>
+        </section>
+
         <!-- Section 4: Regional Language Preferences -->
         <section class="card">
           <h3 class="settings-section-title">
@@ -234,6 +259,7 @@
   <!-- JavaScript Modules -->
   <script src="js/shared/sync.js"></script>
   <script src="js/shared/api.js"></script>
+  <script src="js/shared/socket.js"></script>
   <script src="js/shared/navbar.js"></script>
   <script src="js/pages/settings.js"></script>
 </body>

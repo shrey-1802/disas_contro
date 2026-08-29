@@ -78,10 +78,7 @@ function updateConnectivityStatus() {
   
   if (!connectionIndicator) return;
 
-  const isOnline = navigator.onLine;
-  const simulatedOffline = localStorage.getItem('simulated-offline') === 'true';
-  const offline = !isOnline || simulatedOffline;
-  
+  const socketStatus = localStorage.getItem('socket-status') || 'disconnected';
   const pendingCount = parseInt(localStorage.getItem('pending-actions-count') || '0', 10);
   const syncStatus = localStorage.getItem('sync-status') || 'idle';
 
@@ -91,11 +88,17 @@ function updateConnectivityStatus() {
       <span class="indicator-dot"></span>
       <span>Syncing Queue...</span>
     `;
-  } else if (!offline) {
+  } else if (socketStatus === 'connected') {
     connectionIndicator.className = 'connectivity-indicator online';
     connectionIndicator.innerHTML = `
       <span class="indicator-dot"></span>
       <span>System Online</span>
+    `;
+  } else if (socketStatus === 'reconnecting') {
+    connectionIndicator.className = 'connectivity-indicator reconnecting';
+    connectionIndicator.innerHTML = `
+      <span class="indicator-dot"></span>
+      <span>Reconnecting...</span>
     `;
   } else {
     connectionIndicator.className = 'connectivity-indicator offline';
@@ -136,6 +139,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.addEventListener('sync-status-change', (event) => {
     localStorage.setItem('sync-status', event.detail.status);
+    updateConnectivityStatus();
+  });
+
+  // Listen for Socket connection lifecycle changes
+  window.addEventListener('socket-status-change', (event) => {
     updateConnectivityStatus();
   });
   
