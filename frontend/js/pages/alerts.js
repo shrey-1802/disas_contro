@@ -1,10 +1,5 @@
-/**
- * Alerts & Command Center Controller — Severity Inbox, Acknowledgment & Escalation Workflows
- * Relief Supply Chain Resilience & Rerouting System (Phase 9)
- */
-
 import { renderGlobalShell, renderCriticalAlertBanner } from '../navbar.js';
-import { api } from '../api.js';
+import { Store } from '../store.js';
 import { socketService } from '../socket.js';
 import { renderStatusBadge } from '../statusBadge.js';
 import { toast } from '../toast.js';
@@ -14,16 +9,7 @@ let alertsInboxList = [];
 document.addEventListener('DOMContentLoaded', async () => {
   renderGlobalShell('alerts.html');
 
-  // Query REST API for alerts
-  try {
-    const rawAlerts = await api.getAlerts().catch(() => null);
-    alertsInboxList = rawAlerts && rawAlerts.length > 0 ? rawAlerts : getMockAlerts();
-  } catch (err) {
-    console.warn('[Alerts] API fallback notice:', err.message);
-    alertsInboxList = getMockAlerts();
-  }
-
-  // Initial Inbox Render
+  alertsInboxList = Store.getAlerts();
   renderAlertsInbox();
 
   // Bind Filters & Buttons
@@ -31,9 +17,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('filter-state')?.addEventListener('change', renderAlertsInbox);
   document.getElementById('btn-clear-ack')?.addEventListener('click', handleClearAcknowledged);
 
-  // Real-Time Socket Stream Updates
-  socketService.subscribe('alert_update', (data) => handleAlertStreamUpdate(data));
+  // Reactive store update listener
+  window.addEventListener('store-updated', () => {
+    alertsInboxList = Store.getAlerts();
+    renderAlertsInbox();
+  });
 });
+
 
 /* --------------------------------------------------------------------------
    1. INBOX RENDERING ENGINE (3-TIER SEVERITY MODEL)
@@ -160,41 +150,13 @@ function renderAlertsInbox() {
 /* --------------------------------------------------------------------------
    2. ACKNOWLEDGMENT WORKFLOW (PATCH /api/alerts/:id/acknowledge)
    -------------------------------------------------------------------------- */
-async function handleAcknowledge(id) {
-  try {
-    // API request to acknowledge alert
-    await api.acknowledgeAlert(id).catch(err => {
-      throw new Error(err.message || 'Server acknowledgment failed');
-    });
-
-    // On Success: Update local state, PRESERVE in history (do NOT delete completely)
-    const alert = alertsInboxList.find(a => (a.id === id || a.alert_id === id));
-    if (alert) {
-      alert.acknowledged = true;
-    }
-
-    // Update global persistent critical banner state if this was critical
-    const stored = localStorage.getItem('unacknowledged_critical_alert');
-    if (stored) {
-      try {
-        const activeObj = JSON.parse(stored);
-        if (activeObj.id === id) {
-          activeObj.acknowledged = true;
-          localStorage.setItem('unacknowledged_critical_alert', JSON.stringify(activeObj));
-          renderCriticalAlertBanner(activeObj);
-        }
-      } catch (e) {}
-    }
-
-    renderAlertsInbox();
-    toast.show(`Alert #${id} acknowledged by operator`, 'safe', 3000);
-
-  } catch (err) {
-    // NEVER fake success if API call fails
-    console.error('[Alerts] Acknowledgment error:', err.message);
-    toast.show(`Acknowledgment failed: Alert #${id} remains unacknowledged`, 'critical', 4000);
-  }
+function handleAcknowledge(id) {
+  Store.acknowledgeAlert(id);
+  alertsInboxList = Store.getAlerts();
+  renderAlertsInbox();
+  toast.success(`Alert #${id} acknowledged by operator`);
 }
+
 
 /* --------------------------------------------------------------------------
    3. ESCALATION WORKFLOW (PATCH /api/alerts/:id/escalate)

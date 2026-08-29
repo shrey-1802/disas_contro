@@ -1,10 +1,5 @@
-/**
- * Live Situational Map Controller — Real-Time Patch Stream Engine (Phase 5)
- * Relief Supply Chain Resilience & Rerouting System
- */
-
 import { renderGlobalShell } from '../navbar.js';
-import { api } from '../api.js';
+import { Store } from '../store.js';
 import { socketService } from '../socket.js';
 import { renderStatusBadge } from '../statusBadge.js';
 import { toast } from '../toast.js';
@@ -26,37 +21,43 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderGlobalShell('live-map.html');
 
   initLeafletMap();
-
-  // Phase 5 Requirement: GET /api/roads, /api/bridges, /api/shelters, /api/missions, /api/vehicles
-  let roads = [], bridges = [], shelters = [], missions = [], vehicles = [];
-  try {
-    [roads, bridges, shelters, missions, vehicles] = await Promise.all([
-      api.getRoads().catch(() => getMockRoads()),
-      api.getBridges().catch(() => getMockBridges()),
-      api.getShelters().catch(() => getMockShelters()),
-      api.getMissions().catch(() => getMockMissions()),
-      api.getVehicles().catch(() => getMockVehicles())
-    ]);
-  } catch (e) {
-    console.warn('[LiveMap] API telemetry fetch warning:', e.message);
-  }
-
-  // Render Map Overlays from fetched API data (or mock fallbacks)
-  renderFloodOverlays();
-  renderDebrisCorridors(roads);
-  renderBridgeMarkers(bridges);
-  renderShelterMarkers(shelters);
-  renderConvoyMarkers(missions, vehicles);
+  refreshMapLayers();
 
   // Bind Left Layer Controls
   bindLayerControls();
 
-  // Check URL query parameters (e.g., ?convoy=CV-014)
+  // Check URL query parameters (e.g., ?convoy=CV-014 or ?hazard=B14 or ?shelter=Shelter06)
   const urlParams = new URLSearchParams(window.location.search);
-  const targetConvoyId = urlParams.get('convoy');
+  const targetConvoyId = urlParams.get('convoy') || urlParams.get('hazard') || urlParams.get('shelter');
   if (targetConvoyId) {
     selectEntityById(targetConvoyId);
   }
+
+  // Reactive store updates
+  window.addEventListener('store-updated', () => {
+    refreshMapLayers();
+  });
+});
+
+function refreshMapLayers() {
+  if (!map) return;
+  const roads = Store.getRoads();
+  const bridges = Store.getBridges();
+  const shelters = Store.getShelters();
+  const missions = Store.getMissions();
+
+  if (debrisLayerGroup) debrisLayerGroup.clearLayers();
+  if (bridgeLayerGroup) bridgeLayerGroup.clearLayers();
+  if (shelterLayerGroup) shelterLayerGroup.clearLayers();
+  if (convoyLayerGroup) convoyLayerGroup.clearLayers();
+
+  renderFloodOverlays();
+  renderDebrisCorridors(roads);
+  renderBridgeMarkers(bridges);
+  renderShelterMarkers(shelters);
+  renderConvoyMarkers(missions, []);
+}
+
 
   // Hook global search input
   const searchInput = document.getElementById('global-search-input');

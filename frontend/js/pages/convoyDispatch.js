@@ -1,10 +1,5 @@
-/**
- * Convoy Dispatch & Tracking Controller — Priority Mission Calculation & Rerouting Visualization
- * Relief Supply Chain Resilience & Rerouting System (Phase 6)
- */
-
 import { renderGlobalShell } from '../navbar.js';
-import { api } from '../api.js';
+import { Store } from '../store.js';
 import { socketService } from '../socket.js';
 import { renderStatusBadge } from '../statusBadge.js';
 import { toast } from '../toast.js';
@@ -24,19 +19,23 @@ let selectedConvoyIds = new Set();
 document.addEventListener('DOMContentLoaded', async () => {
   renderGlobalShell('convoy-dispatch.html');
 
-  // Load telemetry data from REST API
-  try {
-    missionsList = await api.getMissions();
-    if (!missionsList || missionsList.length === 0) {
-      missionsList = getMockMissions();
-    }
-  } catch (err) {
-    console.warn('[ConvoyDispatch] API fallback notice:', err.message);
-    missionsList = getMockMissions();
-  }
-
-  // Initial table render
+  // Load telemetry data from Store
+  missionsList = Store.getMissions();
   renderConvoyTable();
+
+  // Highlight specific convoy if passed via query parameter (e.g. ?convoy=CV-014)
+  const urlParams = new URLSearchParams(window.location.search);
+  const targetConvoyId = urlParams.get('convoy');
+  if (targetConvoyId) {
+    setTimeout(() => {
+      const row = document.getElementById(`row-${targetConvoyId}`);
+      if (row) {
+        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        row.style.outline = '3px solid var(--forest-600)';
+        row.style.backgroundColor = 'var(--sage-100)';
+      }
+    }, 200);
+  }
 
   // Event Listeners for Filters
   document.getElementById('filter-cargo-priority')?.addEventListener('change', renderConvoyTable);
@@ -55,9 +54,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('btn-cancel-dispatch')?.addEventListener('click', closeNewDispatchModal);
   document.getElementById('form-new-dispatch')?.addEventListener('submit', handleNewDispatchSubmit);
 
-  // Real-Time Socket Stream Updates
-  socketService.subscribe('mission_update', (data) => handleMissionUpdateStream(data));
+  // Reactive store update listeners
+  window.addEventListener('store-updated', () => {
+    missionsList = Store.getMissions();
+    renderConvoyTable();
+  });
 });
+
 
 /* --------------------------------------------------------------------------
    1. CARGO PRIORITY CALCULATOR
@@ -166,7 +169,8 @@ function renderConvoyTable() {
     }
 
     return `
-      <tr id="convoy-row-${id}">
+      <tr id="row-${id}">
+
         <td style="text-align:center;">
           <input type="checkbox" class="convoy-checkbox" data-id="${id}" ${isChecked ? 'checked' : ''}>
         </td>

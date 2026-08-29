@@ -1,10 +1,10 @@
 /**
  * Supply Swap & Surplus Matching Controller — Warehouse Manager Decisions
- * Relief Supply Chain Resilience & Rerouting System
+ * Interconnected Real-Time Cross-Page State Integration
  */
 
 import { renderGlobalShell } from '../navbar.js';
-import { api } from '../api.js';
+import { Store } from '../store.js';
 import { socketService } from '../socket.js';
 import { renderStatusBadge } from '../statusBadge.js';
 import { toast } from '../toast.js';
@@ -14,15 +14,24 @@ let swapsList = [];
 document.addEventListener('DOMContentLoaded', async () => {
   renderGlobalShell('supply-swap.html');
 
-  // Load telemetry data from API
-  try {
-    const res = await api.getSupplySwaps();
-    swapsList = res && res.data ? res.data : [];
-  } catch (err) {
-    console.warn('[SupplySwap] API fallback notice:', err.message);
-  }
-
+  swapsList = Store.getSwaps();
   renderSwapCards();
+
+  // Check URL query params for target shelter deep link (e.g. ?target=Shelter06)
+  const urlParams = new URLSearchParams(window.location.search);
+  const targetParam = urlParams.get('target');
+  if (targetParam) {
+    const targetSelect = document.getElementById('input-target-destination');
+    if (targetSelect) {
+      for (let i = 0; i < targetSelect.options.length; i++) {
+        if (targetSelect.options[i].value.toLowerCase().includes(targetParam.toLowerCase())) {
+          targetSelect.selectedIndex = i;
+          break;
+        }
+      }
+    }
+    openCreateSwapModal();
+  }
 
   // Filter Listeners
   document.getElementById('filter-urgency')?.addEventListener('change', renderSwapCards);
@@ -36,9 +45,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('btn-cancel-swap')?.addEventListener('click', closeCreateSwapModal);
   document.getElementById('form-create-swap')?.addEventListener('submit', handleCreateSwapSubmit);
 
-  // Subscribe to real-time updates
-  socketService.subscribe('mission_update', () => renderSwapCards());
-  socketService.subscribe('road_update', () => renderSwapCards());
+  // Reactive store updates across browser tabs/windows
+  window.addEventListener('store-updated', () => {
+    swapsList = Store.getSwaps();
+    renderSwapCards();
+  });
 });
 
 function renderSwapCards() {
@@ -50,6 +61,7 @@ function renderSwapCards() {
   const routeFilter = document.getElementById('filter-route-status')?.value || 'all';
   const swapFilter = document.getElementById('filter-swap-status')?.value || 'all';
 
+  swapsList = Store.getSwaps();
   let filtered = [...swapsList];
 
   // Urgency Filter
@@ -149,26 +161,22 @@ function renderSwapCards() {
   document.querySelectorAll('.btn-approve-swap').forEach(btn => {
     btn.addEventListener('click', (e) => {
       const id = e.target.getAttribute('data-id');
-      approveSwap(id);
+      handleApproveSwap(id);
     });
   });
 }
 
-async function approveSwap(id) {
-  const swap = swapsList.find(s => s.id === id);
-  if (!swap) return;
+function handleApproveSwap(id) {
+  const result = Store.approveSwap(id);
+  if (!result) return;
 
-  swap.status = 'APPROVED';
-  toast.success(`Supply Swap ${id} approved! Relief convoy dispatched to ${swap.targetDestination}.`);
+  toast.success(`Supply Swap ${id} approved! Relief Convoy ${result.convoyId} automatically dispatched.`);
   renderSwapCards();
 
-  // Create real-time notification alert banner
-  localStorage.setItem('unacknowledged_critical_alert', JSON.stringify({
-    id: `ALT-SWAP-${id}`,
-    title: `Supply Transfer Dispatched: ${swap.supplyItem}`,
-    message: `${swap.quantity} ${swap.unit} en route to ${swap.targetDestination}. ETA: ${swap.urgencyHoursRemaining} hours.`,
-    acknowledged: false
-  }));
+  // Automatically navigate to convoy dispatch tracking after 1 second
+  setTimeout(() => {
+    window.location.href = `convoy-dispatch.html?convoy=${result.convoyId}`;
+  }, 1000);
 }
 
 function openCreateSwapModal() {
@@ -202,7 +210,10 @@ function handleCreateSwapSubmit(e) {
     createdAt: new Date().toISOString()
   };
 
-  swapsList.unshift(newSwap);
+  const swaps = Store.getSwaps();
+  swaps.unshift(newSwap);
+  Store.saveSwaps(swaps);
+
   closeCreateSwapModal();
   renderSwapCards();
   toast.success(`New Supply Swap offer created for ${target}!`);

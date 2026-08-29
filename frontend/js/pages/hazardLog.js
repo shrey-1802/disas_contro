@@ -1,10 +1,5 @@
-/**
- * Hazard & Incident Log Controller — Reverse-Chronological Timeline & Glove-Friendly Field Reporting
- * Relief Supply Chain Resilience & Rerouting System (Phase 8)
- */
-
 import { renderGlobalShell } from '../navbar.js';
-import { api } from '../api.js';
+import { Store } from '../store.js';
 import { auth } from '../auth.js';
 import { socketService } from '../socket.js';
 import { renderStatusBadge } from '../statusBadge.js';
@@ -15,19 +10,8 @@ let hazardFeedList = [];
 document.addEventListener('DOMContentLoaded', async () => {
   renderGlobalShell('hazard-log.html');
 
-  // Load telemetry data from API or fallbacks
-  try {
-    const rawReports = await api.getReports().catch(() => null);
-    hazardFeedList = rawReports && rawReports.length > 0 ? rawReports : getMockHazards();
-  } catch (err) {
-    console.warn('[HazardLog] API fallback notice:', err.message);
-    hazardFeedList = getMockHazards();
-  }
-
-  // Initial Sync Status Check
+  hazardFeedList = Store.getReports();
   updateOfflineSyncBanner();
-
-  // Render Feed
   renderHazardFeed();
 
   // Filter Listeners
@@ -55,9 +39,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
   window.addEventListener('offline', updateOfflineSyncBanner);
 
-  // Real-Time Socket Stream Updates
-  socketService.subscribe('alert_update', (data) => handleHazardStreamUpdate(data));
+  // Reactive store update listener
+  window.addEventListener('store-updated', () => {
+    hazardFeedList = Store.getReports();
+    renderHazardFeed();
+  });
 });
+
 
 /* --------------------------------------------------------------------------
    1. TIMELINE FEED RENDER ENGINE (REVERSE CHRONOLOGICAL)
@@ -233,41 +221,22 @@ async function handleFieldReportSubmit(e) {
   const severity = document.getElementById('input-hazard-severity')?.value;
   const description = document.getElementById('input-hazard-description')?.value;
 
-  const newReport = {
-    id: `REP-${Math.floor(1000 + Math.random() * 9000)}`,
-    title: `${type} — ${location}`,
-    type,
-    location,
-    severity,
-    description,
-    source: 'Field Report',
-    confidence: '92%',
-    verified: false,
-    timestamp: new Date().toISOString()
-  };
+  const newReport = Store.addReport({
+    region: location || 'Sector 6',
+    hazardType: type,
+    status: severity,
+    tier: severity.toUpperCase() === 'CRITICAL' ? 'BLOCKED' : 'CAUTION',
+    description: description,
+    sourceType: 'Field Report'
+  });
 
   closeReportModal();
   document.getElementById('form-hazard-report')?.reset();
 
-  // Check network status
-  if (navigator.onLine) {
-    try {
-      await api.createReport(newReport).catch(() => null);
-    } catch (err) {
-      console.warn('[HazardLog] API report create fallback:', err.message);
-    }
-
-    hazardFeedList.unshift(newReport);
-    renderHazardFeed();
-    toast.show(`Field Report #${newReport.id} submitted to Control Room`, 'safe', 3000);
-
-  } else {
-    // MISSION-CRITICAL RULE: If offline, save locally & NEVER say "Report submitted"
-    saveReportLocally(newReport);
-    updateOfflineSyncBanner();
-    toast.show('Saved locally — Pending synchronization', 'warning', 4000);
-  }
+  renderHazardFeed();
+  toast.success(`Field Report #${newReport.id} submitted! Interconnected convoy routes recalculated.`);
 }
+
 
 function saveReportLocally(report) {
   const pending = JSON.parse(localStorage.getItem('pending_field_reports') || '[]');

@@ -1,10 +1,5 @@
-/**
- * Shelter & Demand Board Controller — Supply Urgency Matrix & Telemetry Expansion
- * Relief Supply Chain Resilience & Rerouting System (Phase 7)
- */
-
 import { renderGlobalShell } from '../navbar.js';
-import { api } from '../api.js';
+import { Store } from '../store.js';
 import { socketService } from '../socket.js';
 import { renderStatusBadge } from '../statusBadge.js';
 import { toast } from '../toast.js';
@@ -14,18 +9,7 @@ let sheltersList = [];
 document.addEventListener('DOMContentLoaded', async () => {
   renderGlobalShell('shelter-board.html');
 
-  // Query REST API for shelters data
-  try {
-    sheltersList = await api.getShelters();
-    if (!sheltersList || sheltersList.length === 0) {
-      sheltersList = getMockShelters();
-    }
-  } catch (err) {
-    console.warn('[ShelterBoard] API fallback notice:', err.message);
-    sheltersList = getMockShelters();
-  }
-
-  // Initial Grid Render
+  sheltersList = Store.getShelters();
   renderShelterGrid();
 
   // Bind Filter & Sort Listeners
@@ -36,16 +20,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Export Report Button
   document.getElementById('btn-export-report')?.addEventListener('click', () => {
-    toast.show('Exporting regional shelter demand & supply report (CSV)...', 'safe', 3000);
+    toast.success('Exporting regional shelter demand & supply report (CSV)...');
   });
 
   // Modal Close Listeners
   document.getElementById('btn-close-shelter-modal')?.addEventListener('click', closeShelterModal);
   document.getElementById('btn-close-shelter-modal-footer')?.addEventListener('click', closeShelterModal);
 
-  // Real-Time Socket Stream Updates
-  socketService.subscribe('shelter_update', (data) => handleShelterUpdateStream(data));
+  // Reactive store update listener
+  window.addEventListener('store-updated', () => {
+    sheltersList = Store.getShelters();
+    renderShelterGrid();
+  });
 });
+
 
 /* --------------------------------------------------------------------------
    1. TELEMETRY CALCULATORS & SEMANTIC TIER DERIVATION
