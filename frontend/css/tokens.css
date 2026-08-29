@@ -1,0 +1,29 @@
+/* Design System Tokens - Single Source of Truth */
+:root {
+  /* Approved Government Palette */
+  --bg-honeydew: #EDF3E0;
+  --sage-500: #8FAF8C;
+  --forest-600: #5A7A68;
+  --forest-700: #4A6656;
+  --sage-100: #E4EBE0;
+  --slate-800: #3A4750;
+
+  /* Additional shades for visual depth as approved by guidelines */
+  --forest-100: #EBF0ED;
+  --forest-900: #1B2921;
+  --white: #FFFFFF;
+  --slate-100: #ECEFF1;
+  --slate-300: #CFD8DC;
+  --slate-900: #1C242B;
+
+  /* Font Stack */
+  --font-sans: 'Inter', 'IBM Plex Sans', 'Noto Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* Layout / Radii */
+  --radius: 8px;
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s ease;
+  
+  /* Touch target sizes */
+  --touch-target-min: 44px;
+}

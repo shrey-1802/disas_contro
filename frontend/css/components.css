@@ -1,0 +1,500 @@
+/* Reusable Component UI Styles */
+
+/* -------------------------------------------------------------
+   1. GLOBAL OPERATIONAL SHELL LAYOUT
+------------------------------------------------------------- */
+.app-shell {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+/* Sidebar Navigation */
+.sidebar-nav {
+  width: 260px;
+  background-color: var(--forest-600);
+  color: var(--white);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  border-right: 1px solid var(--forest-700);
+  padding: 20px 0;
+  transition: width var(--transition-normal);
+}
+
+.sidebar-header {
+  padding: 0 20px 20px 20px;
+  border-bottom: 1px solid var(--forest-700);
+  margin-bottom: 20px;
+}
+
+.government-identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+  color: var(--sage-100);
+}
+
+.app-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-top: 5px;
+  color: var(--white);
+}
+
+.nav-links {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 0 10px;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 15px;
+  color: var(--sage-100);
+  border-radius: var(--radius);
+  font-weight: 500;
+  text-decoration: none;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.nav-link:hover, .nav-link:focus {
+  background-color: var(--forest-700);
+  color: var(--white);
+}
+
+.nav-link.active {
+  background-color: var(--sage-500);
+  color: var(--forest-900);
+  font-weight: 600;
+}
+
+/* Main Layout Pane */
+.main-layout {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  overflow: hidden;
+  background-color: var(--bg-honeydew);
+}
+
+/* Top Operational Bar */
+.top-bar {
+  height: 64px;
+  background-color: var(--white);
+  border-bottom: 1px solid var(--sage-100);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  flex-shrink: 0;
+}
+
+.page-title-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.page-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--slate-800);
+}
+
+.top-bar-stats {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+/* Scrollable Content Container */
+.content-area {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+/* -------------------------------------------------------------
+   2. BUTTONS
+------------------------------------------------------------- */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  min-height: var(--touch-target-min);
+  transition: all var(--transition-fast);
+}
+
+.button--primary {
+  background-color: var(--forest-600);
+  color: var(--white);
+}
+
+.button--primary:hover, .button--primary:focus {
+  background-color: var(--forest-700);
+}
+
+.button--secondary {
+  background-color: transparent;
+  border-color: var(--sage-500);
+  color: var(--forest-600);
+}
+
+.button--secondary:hover, .button--secondary:focus {
+  background-color: var(--sage-100);
+  color: var(--forest-700);
+}
+
+.button--critical {
+  background-color: var(--slate-800);
+  color: var(--white);
+}
+
+.button--critical:hover, .button--critical:focus {
+  background-color: var(--slate-900);
+}
+
+.button--disabled {
+  background-color: var(--slate-100);
+  border-color: var(--slate-300);
+  color: var(--slate-800);
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* -------------------------------------------------------------
+   3. CARDS & SECTIONS
+------------------------------------------------------------- */
+.card {
+  background-color: var(--white);
+  border: 1px solid var(--sage-100);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.settings-section-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--slate-800);
+  border-bottom: 1px solid var(--slate-100);
+  padding-bottom: 10px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* -------------------------------------------------------------
+   4. FORM CONTROLS & SWITCHES
+------------------------------------------------------------- */
+.form-group {
+  margin-bottom: 20px;
+  max-width: 500px;
+}
+
+.form-group label {
+  display: block;
+  font-weight: 600;
+  color: var(--slate-800);
+  margin-bottom: 8px;
+}
+
+.form-group .help-text {
+  font-size: 0.85rem;
+  color: var(--slate-800);
+  opacity: 0.8;
+  margin-top: 4px;
+}
+
+.form-control {
+  width: 100%;
+}
+
+/* Custom Switch Toggle */
+.switch-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background-color: var(--bg-honeydew);
+  border-radius: var(--radius);
+  margin-bottom: 15px;
+  border: 1px solid var(--sage-100);
+}
+
+.switch-label-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-right: 15px;
+}
+
+.switch-label {
+  font-weight: 600;
+  color: var(--slate-800);
+}
+
+.switch-description {
+  font-size: 0.85rem;
+  color: var(--slate-800);
+  opacity: 0.8;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 52px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--slate-300);
+  transition: .3s;
+  border-radius: 34px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: .3s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: var(--forest-600);
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px var(--forest-600);
+}
+
+input:checked + .slider:before {
+  transform: translateX(24px);
+}
+
+/* -------------------------------------------------------------
+   5. STATUS CHIPS & CONNECTIVITY
+------------------------------------------------------------- */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.status-badge--safe {
+  background-color: var(--sage-100);
+  color: var(--forest-700);
+  border: 1px solid var(--sage-500);
+}
+
+.status-badge--caution {
+  background-color: var(--forest-100);
+  color: var(--forest-900);
+  border: 1px solid var(--forest-600);
+}
+
+.status-badge--blocked {
+  background-color: var(--slate-100);
+  color: var(--slate-900);
+  border: 1px solid var(--slate-800);
+}
+
+/* Connectivity Indicators */
+.connectivity-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.indicator-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: var(--slate-300);
+}
+
+.connectivity-indicator.online .indicator-dot {
+  background-color: var(--sage-500);
+  box-shadow: 0 0 8px var(--sage-500);
+}
+
+.connectivity-indicator.offline .indicator-dot {
+  background-color: var(--slate-800);
+  box-shadow: 0 0 8px var(--slate-800);
+}
+
+.connectivity-indicator.reconnecting .indicator-dot {
+  background-color: var(--forest-600);
+  animation: pulse 1s infinite alternate;
+}
+
+.sync-indicator {
+  font-size: 0.85rem;
+  color: var(--slate-800);
+  opacity: 0.8;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* -------------------------------------------------------------
+   6. ALERTS & TOASTS
+------------------------------------------------------------- */
+.critical-banner {
+  background-color: var(--slate-800);
+  color: var(--white);
+  padding: 10px 24px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.critical-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.critical-banner-badge {
+  background-color: var(--white);
+  color: var(--slate-800);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.critical-banner-close {
+  background: transparent;
+  border: none;
+  color: var(--white);
+  font-size: 1.25rem;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  min-height: auto;
+  opacity: 0.8;
+}
+
+.critical-banner-close:hover {
+  opacity: 1;
+}
+
+/* Toast Container */
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 1000;
+}
+
+.toast {
+  background-color: var(--slate-900);
+  color: var(--white);
+  padding: 12px 20px;
+  border-radius: var(--radius);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transform: translateY(100px);
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.toast.show {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.toast-icon {
+  color: var(--sage-500);
+}
+
+/* -------------------------------------------------------------
+   7. ANIMATIONS
+------------------------------------------------------------- */
+@keyframes pulse {
+  0% { opacity: 0.4; }
+  100% { opacity: 1; }
+}
+
+/* Degradation Banner */
+.degradation-banner {
+  background-color: var(--sage-100);
+  color: var(--slate-800);
+  border-bottom: 2px solid var(--sage-500);
+  padding: 10px 24px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  flex-shrink: 0;
+  transition: all var(--transition-normal);
+}
+
+.degradation-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.degradation-banner svg {
+  color: var(--forest-600);
+  flex-shrink: 0;
+}
+

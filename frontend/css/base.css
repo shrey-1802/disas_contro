@@ -1,0 +1,156 @@
+/* Global and Typography Base Styles */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  font-family: var(--font-sans);
+  background-color: var(--bg-honeydew);
+  color: var(--slate-800);
+  line-height: 1.5;
+  font-size: 14px; /* Desktop Base (Minimum 14px) */
+}
+
+/* Responsive typography for mobile/tablet */
+@media (max-width: 1024px) {
+  html, body {
+    font-size: 16px; /* Tablet/Field base (Minimum 16px) */
+  }
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--slate-900);
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+h1 { font-size: 2rem; }
+h2 { font-size: 1.5rem; }
+h3 { font-size: 1.25rem; }
+p { margin-bottom: 1rem; }
+
+a {
+  color: var(--forest-600);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+a:hover, a:focus {
+  color: var(--forest-700);
+  outline: 2px solid var(--forest-600);
+  outline-offset: 2px;
+}
+
+/* Accessibility Focus States */
+*:focus-visible {
+  outline: 2px solid var(--forest-600);
+  outline-offset: 2px;
+}
+
+/* Forms & Inputs base */
+input, select, textarea, button {
+  font-family: inherit;
+  font-size: 1rem;
+  color: inherit;
+  background: var(--white);
+  border: 1px solid var(--slate-300);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  min-height: var(--touch-target-min);
+  outline: none;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--forest-600);
+  box-shadow: 0 0 0 3px rgba(90, 122, 104, 0.2);
+}
+
+button {
+  cursor: pointer;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-honeydew);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--sage-500);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--forest-600);
+}
+
+/* -------------------------------------------------------------
+   FIELD MODE ADAPTATIONS
+   Optimized for high-contrast, outdoor, and glove usage
+------------------------------------------------------------- */
+body.field-mode {
+  /* Increase typography sizes globally */
+  font-size: 18px !important;
+  font-weight: 500 !important;
+
+  /* Force High-Contrast Colors */
+  background-color: #FFFFFF !important;
+  color: #000000 !important;
+
+  /* Redefine design token mappings for extreme contrast */
+  --bg-honeydew: #F9FBF6;
+  --sage-500: #4B6349; /* Darker sage for readability */
+  --forest-600: #26382F; /* Darker forest */
+  --forest-700: #1B2921;
+  --slate-800: #000000;
+  --slate-900: #000000;
+  --slate-300: #000000; /* Dark borders */
+}
+
+/* Apply bold text weight in Field Mode for readability */
+body.field-mode h1,
+body.field-mode h2,
+body.field-mode h3,
+body.field-mode h4,
+body.field-mode strong,
+body.field-mode b,
+body.field-mode th {
+  font-weight: 700 !important;
+}
+
+/* Increase touch targets significantly to min 48px */
+body.field-mode button,
+body.field-mode input,
+body.field-mode select,
+body.field-mode textarea,
+body.field-mode .nav-link,
+body.field-mode a {
+  min-height: 48px !important;
+  min-width: 48px;
+  padding: 12px 18px !important;
+}
+
+/* Simplify layout gaps and sizes */
+body.field-mode .card, 
+body.field-mode .settings-section {
+  border-width: 2px !important;
+  border-color: #000000 !important;
+}
+
+/* Reduce map/basemap clutter opacities */
+body.field-mode .map-layer,
+body.field-mode .basemap-underlay {
+  opacity: 0.85 !important;
+}

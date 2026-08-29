@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings | Relief Supply Chain Resilience Platform</title>
+  
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+  <!-- Synchronously check and apply Field Mode to prevent visual flash -->
+  <script>
+    (function() {
+      if (localStorage.getItem('field-mode') === 'true') {
+        document.body.classList.add('field-mode');
+      }
+      // Apply initial text size scaling
+      const scale = localStorage.getItem('font-scale') || 'standard';
+      let rootSize = '14px';
+      if (scale === 'small') rootSize = '12px';
+      else if (scale === 'large') rootSize = '16px';
+      else if (scale === 'xlarge') rootSize = '18px';
+      document.documentElement.style.fontSize = rootSize;
+    })();
+  </script>
+
+  <div class="app-shell">
+    <!-- Sidebar Navigation Shell -->
+    <aside class="sidebar-nav">
+      <div class="sidebar-header">
+        <div class="government-identity">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+          </svg>
+          <span>NDMA logistics</span>
+        </div>
+        <h1 class="app-title">Disissta Control</h1>
+      </div>
+      
+      <!-- Dynamically Populated Navigation List -->
+      <nav>
+        <ul id="sidebar-nav-list" class="nav-links">
+          <!-- Populated by js/shared/navbar.js -->
+        </ul>
+      </nav>
+    </aside>
+
+    <!-- Main Content Shell -->
+    <main class="main-layout">
+      <!-- Top Operational Bar -->
+      <header class="top-bar">
+        <div class="page-title-section">
+          <h2 class="page-title">Settings</h2>
+        </div>
+        
+        <div class="top-bar-stats">
+          <!-- Connection Status Indicator -->
+          <div id="connectivity-indicator" class="connectivity-indicator online">
+            <span class="indicator-dot"></span>
+            <span>Checking...</span>
+          </div>
+
+          <!-- Last Synced Display -->
+          <div class="sync-indicator">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+            </svg>
+            <span>Synced <span id="last-synced-time">Just now</span></span>
+          </div>
+
+          <!-- User Identity Display -->
+          <div style="font-size: 0.9rem; border-left: 1px solid var(--sage-100); padding-left: 20px;">
+            <strong id="header-username">John Doe</strong> 
+            <span id="header-user-role" style="opacity: 0.7; display: block; font-size: 0.8rem;">Control Room Operator</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Persistent Critical Alert Banner -->
+      <div id="global-critical-banner" class="critical-banner">
+        <div class="critical-banner-content">
+          <span class="critical-banner-badge">Critical</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"></polygon>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <span>Convoy 14 stranded — Sector 6 landslide hazard detected</span>
+        </div>
+        <button class="critical-banner-close" aria-label="Dismiss banner" onclick="document.getElementById('global-critical-banner').style.display='none'">×</button>
+      </div>
+
+      <!-- Settings Content Panel -->
+      <div class="content-area">
+        
+        <!-- Section 1: User Profile Settings -->
+        <section class="card">
+          <h3 class="settings-section-title">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            User Configuration
+          </h3>
+          <form id="profile-settings-form">
+            <div class="form-group">
+              <label for="setting-username">Operator Name</label>
+              <input type="text" id="setting-username" class="form-control" placeholder="Enter Full Name">
+              <p class="help-text">Visible to dispatcher logs and field communication channels.</p>
+            </div>
+            
+            <div class="form-group">
+              <label for="setting-role">Operational Role Profile</label>
+              <select id="setting-role" class="form-control">
+                <option value="control_room">Control Room Operator (Full Access)</option>
+                <option value="district_admin">District Admin (Regional Boards)</option>
+                <option value="field_driver">Field Driver (Hazard Logs & Geolocation)</option>
+              </select>
+              <p class="help-text">Modifies the navigation and interface features visible to you.</p>
+            </div>
+
+            <button type="button" id="save-settings-btn" class="button button--primary">Save Profile Details</button>
+          </form>
+        </section>
+
+        <!-- Section 2: Outdoor Field Mode Toggle -->
+        <section class="card">
+          <h3 class="settings-section-title">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+            Field Mode
+          </h3>
+          <div class="switch-container">
+            <div class="switch-label-wrapper">
+              <span class="switch-label">Enable Outdoor Field Mode</span>
+              <span class="switch-description">Increases base font contrast, thickens readable weights, expands click targets, and dims background imagery for outdoor tablet use.</span>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="setting-field-mode">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </section>
+
+        <!-- Section 3: Offline Sync Simulator -->
+        <section class="card">
+          <h3 class="settings-section-title">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+            </svg>
+            Offline Synchronization
+          </h3>
+          
+          <div class="switch-container">
+            <div class="switch-label-wrapper">
+              <span class="switch-label">Simulate Offline Mode</span>
+              <span class="switch-description">Cuts connection to the mock Express API server to test local queue caching and offline visual degradation banners.</span>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="setting-offline-simulate">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 15px 0;">
+            <div>
+              <p style="font-weight: 600; margin-bottom: 2px;">Offline Action Queue Status</p>
+              <p style="font-size: 0.9rem; opacity: 0.8;">Pending local actions: <strong id="pending-actions-count">0</strong> updates cached</p>
+            </div>
+            <button id="sync-now-btn" class="button button--secondary">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+              </svg>
+              <span>Sync Now</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- Section 4: Regional Language Preferences -->
+        <section class="card">
+          <h3 class="settings-section-title">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+            Language Settings
+          </h3>
+          <div class="form-group">
+            <label for="setting-language">Display Language</label>
+            <select id="setting-language" class="form-control">
+              <option value="en">English (Default)</option>
+              <option value="hi">हिन्दी (Hindi)</option>
+              <option value="ne">नेपाली (Nepali)</option>
+            </select>
+            <p class="help-text">Localization fallback support for regional disaster operations.</p>
+          </div>
+        </section>
+
+        <!-- Section 5: Accessibility Adjustments -->
+        <section class="card">
+          <h3 class="settings-section-title">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+            Accessibility
+          </h3>
+          <div class="form-group">
+            <label for="setting-font-scale">Typography Font Scaling</label>
+            <select id="setting-font-scale" class="form-control">
+              <option value="small">Small (12px base)</option>
+              <option value="standard">Standard (14px base)</option>
+              <option value="large">Large (16px base)</option>
+              <option value="xlarge">Extra Large (18px base)</option>
+            </select>
+            <p class="help-text">Increases basic size of interface text for reading-assistance.</p>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- JavaScript Modules -->
+  <script src="js/shared/sync.js"></script>
+  <script src="js/shared/api.js"></script>
+  <script src="js/shared/navbar.js"></script>
+  <script src="js/pages/settings.js"></script>
+</body>
+</html>
