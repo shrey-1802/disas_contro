@@ -3,66 +3,141 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Settings - DISISSTA Platform</title>
+  <meta name="description" content="System settings, Field Mode toggles, accessibility controls, and offline synchronization parameters.">
+  <title>Settings — Relief Supply Chain Platform</title>
+
+  <!-- Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- CSS Architecture -->
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/components.css">
-  <link rel="stylesheet" href="css/layout.css">
 </head>
 <body>
   <div class="app-shell">
-    <header class="topbar" id="app-topbar"></header>
-    <nav class="sidebar" id="app-sidebar"></nav>
+    <header class="app-header" id="app-header"></header>
 
-    <main class="app-content">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md);">
-        <div>
-          <h1>System & Field Settings</h1>
-          <p style="color: var(--slate-700);">Configure Field Mode tablet settings, accessibility, language, and offline synchronization.</p>
-        </div>
-      </div>
+    <div class="app-body">
+      <nav class="app-nav" id="app-nav" aria-label="Operational Navigation"></nav>
 
-      <div style="display: flex; flex-direction: column; gap: var(--space-md); max-width: 600px;">
-        <!-- Field Mode Settings -->
-        <div class="card">
-          <h3>Field Tablet Mode</h3>
-          <p style="font-size: 0.9rem; color: var(--slate-700); margin-bottom: var(--space-sm);">
-            Increases font sizing (min 16px) and expands button touch targets for outdoor sunlight tablet use.
-          </p>
-          <label style="display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 1rem; cursor: pointer;">
-            <input type="checkbox" id="toggle-field-mode" style="width: 20px; height: 20px;">
-            Enable High-Contrast Field Tablet Mode
-          </label>
-        </div>
+      <main class="app-main" id="main-content">
+        <header>
+          <h1>System Settings & Preferences</h1>
+          <p class="text-sm" style="color:var(--slate-600);">Manage field operation modes, user permissions, accessibility settings, and local offline data synchronization.</p>
+        </header>
 
-        <!-- Language Preference -->
-        <div class="card">
-          <h3>Multilingual Language</h3>
-          <p style="font-size: 0.9rem; color: var(--slate-700); margin-bottom: var(--space-sm);">
-            Select interface language. Uses fallback Noto Sans font.
-          </p>
-          <select id="select-language" style="width: 100%;">
-            <option value="en">English (Default)</option>
-            <option value="hi">Hindi (हिन्दी)</option>
-            <option value="ne">Nepali (नेपाली)</option>
-          </select>
-        </div>
+        <section style="display:flex; flex-direction:column; gap:var(--space-lg); max-width:760px;">
+          
+          <!-- User Profile & Active Operational Role -->
+          <div class="card">
+            <div class="card__header">
+              <h2 class="card__title">👤 Operator Profile & Access Permissions</h2>
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-md); margin-top:var(--space-sm);">
+              <div>
+                <div class="text-xs font-bold uppercase" style="color:var(--slate-600);">Operator Call Sign</div>
+                <div class="font-semibold text-sm" id="user-display-name" style="color:var(--slate-900); margin-top:2px;">Operator Alex V.</div>
+              </div>
+              <div>
+                <div class="text-xs font-bold uppercase" style="color:var(--slate-600);">Assigned Institution</div>
+                <div class="font-semibold text-sm" style="color:var(--slate-900); margin-top:2px;">Disaster Management Control Authority</div>
+              </div>
+            </div>
 
-        <!-- Offline Queue Information -->
-        <div class="card">
-          <h3>Offline Queue Status</h3>
-          <p style="font-size: 0.9rem; color: var(--slate-700); margin-bottom: var(--space-xs);">
-            Reports saved locally awaiting network reconnection:
-          </p>
-          <div style="font-size: 1.1rem; font-weight: 700; color: var(--forest-700);" id="offline-queue-count">
-            0 Queued Reports
+            <div style="margin-top:var(--space-md); padding-top:var(--space-sm); border-top:1px solid var(--sage-100);">
+              <label for="select-user-role" class="font-semibold text-xs uppercase" style="color:var(--slate-800); display:block; margin-bottom:6px;">Active Operational Role *</label>
+              <select id="select-user-role" style="max-width:360px;">
+                <option value="control_room">Control Room Operator (Full Command Access)</option>
+                <option value="district_admin">District Admin (Regional Resource Management)</option>
+                <option value="field_driver">Field Driver (Mobile-First Fleet Tracking & Reports)</option>
+              </select>
+              <p class="text-xs" style="color:var(--slate-600); margin-top:4px;">Switching roles updates sidebar permissions and operational action authorization in real time.</p>
+            </div>
           </div>
-          <button id="btn-force-sync" class="button button--secondary" style="margin-top: var(--space-sm); width: fit-content;">
-            Force Synchronize Now
-          </button>
-        </div>
-      </div>
-    </main>
+
+          <!-- Outdoor Field Mode Settings -->
+          <div class="card">
+            <div class="card__header">
+              <h2 class="card__title">📱 Outdoor Field Tablet Mode</h2>
+              <span class="status-badge status-badge--caution" id="field-mode-status-badge">DEFAULT</span>
+            </div>
+            <p class="text-sm">Optimizes UI contrast, enforces minimum 16px font scale, and expands touch targets for outdoor glare, direct sunlight, and gloved operation.</p>
+            <div style="margin-top:var(--space-md); background:var(--bg-honeydew-light); padding:var(--space-sm) var(--space-md); border-radius:var(--radius-sm); border:1px solid var(--sage-200);">
+              <label class="flex items-center gap-sm font-semibold text-sm" style="cursor:pointer;">
+                <input type="checkbox" id="setting-field-mode" style="width:18px; height:18px;">
+                Enable High-Contrast Field Tablet Mode (<code style="font-size:12px;">&lt;body class="field-mode"&gt;</code>)
+              </label>
+            </div>
+          </div>
+
+          <!-- Language & Localization -->
+          <div class="card">
+            <div class="card__header">
+              <h2 class="card__title">🌐 Language & Localization</h2>
+            </div>
+            <p class="text-sm">Multilingual support built into system typography and component layouts.</p>
+            <div style="margin-top:var(--space-md); max-width:360px;">
+              <label for="language-select" class="font-semibold text-xs uppercase" style="color:var(--slate-800); display:block; margin-bottom:6px;">Operational Interface Language</label>
+              <select id="language-select">
+                <option value="en">English (Official Government Baseline)</option>
+                <option value="es">Español (Regional Operations)</option>
+                <option value="hi">हिंदी (Regional Disaster Operations)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Accessibility Controls -->
+          <div class="card">
+            <div class="card__header">
+              <h2 class="card__title">👁️ Accessibility & Visual Contrast</h2>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:var(--space-sm); margin-top:var(--space-sm);">
+              <label class="flex items-center gap-sm text-sm font-semibold" style="cursor:pointer;">
+                <input type="checkbox" id="setting-high-contrast" style="width:18px; height:18px;">
+                High Contrast Mode (Enhanced borders & dark text)
+              </label>
+              <label class="flex items-center gap-sm text-sm font-semibold" style="cursor:pointer;">
+                <input type="checkbox" id="setting-reduce-motion" style="width:18px; height:18px;">
+                Reduce Motion & Disable Animations
+              </label>
+              <div style="margin-top:var(--space-xs); max-width:360px;">
+                <label for="range-font-scale" class="font-semibold text-xs uppercase" style="color:var(--slate-800); display:block; margin-bottom:4px;">Interface Font Scaling (<span id="font-scale-value">100%</span>)</label>
+                <input type="range" id="range-font-scale" min="100" max="120" step="5" value="100" style="width:100%;">
+              </div>
+            </div>
+          </div>
+
+          <!-- Offline Data & Synchronization Parameters -->
+          <div class="card">
+            <div class="card__header">
+              <h2 class="card__title">🔄 Offline Queue & Local Data Cache</h2>
+              <span class="status-badge status-badge--safe" id="settings-network-status">ONLINE</span>
+            </div>
+            <p class="text-sm">Local storage manages queued field hazard reports and map state when field connectivity is disrupted.</p>
+
+            <div style="margin:var(--space-md) 0; display:grid; grid-template-columns:1fr 1fr; gap:var(--space-md);" class="text-xs">
+              <div class="card" style="padding:var(--space-sm);">
+                <div class="font-bold uppercase" style="color:var(--slate-600);">Queued Offline Reports</div>
+                <div style="font-size:24px; font-weight:700; color:var(--slate-900);" id="pending-reports-count">0 Items</div>
+              </div>
+              <div class="card" style="padding:var(--space-sm);">
+                <div class="font-bold uppercase" style="color:var(--slate-600);">Last Server Synchronization</div>
+                <div style="font-size:16px; font-weight:700; color:var(--forest-800);" id="last-sync-time">1 minute ago</div>
+              </div>
+            </div>
+
+            <div style="display:flex; gap:var(--space-sm); flex-wrap:wrap;">
+              <button class="button button--secondary text-xs" id="btn-sync-now">🔄 Trigger Immediate Re-Sync</button>
+              <button class="button button--secondary text-xs" id="btn-clear-cache" style="color:#D32F2F; border-color:#FFCDD2;">🗑️ Clear Offline Queue & Cache</button>
+            </div>
+          </div>
+
+        </section>
+      </main>
+    </div>
   </div>
 
   <script type="module" src="js/pages/settings.js"></script>

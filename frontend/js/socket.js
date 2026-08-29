@@ -1,64 +1,76 @@
-/* FRONTEND CENTRALIZED SOCKET.IO SERVICE (Phase 12) */
+/**
+ * Socket.io Real-Time Event Centralized Module
+ * Relief Supply Chain Resilience & Rerouting System
+ */
+
+import { toast } from './toast.js';
 
 class SocketService {
   constructor() {
     this.socket = null;
     this.listeners = new Map();
-    this.connected = false;
+    this.init();
   }
 
   init() {
     if (typeof io !== 'undefined') {
       try {
-        this.socket = io(window.location.origin, {
-          reconnection: true,
-          reconnectionAttempts: 5,
-          reconnectionDelay: 2000
-        });
+        this.socket = io();
 
         this.socket.on('connect', () => {
-          this.connected = true;
-          this.emitLocal('connection:change', { online: true });
+          console.log('[Socket] Connected to real-time stream:', this.socket.id);
         });
 
         this.socket.on('disconnect', () => {
-          this.connected = false;
-          this.emitLocal('connection:change', { online: false });
+          console.warn('[Socket] Disconnected from real-time stream');
         });
 
-        // Forward core socket events
-        const events = [
-          'road:update', 'bridge:update', 'shelter:update',
-          'mission:update', 'hazard:new', 'alert:critical'
-        ];
-
-        events.forEach(evt => {
-          this.socket.on(evt, (data) => this.emitLocal(evt, data));
+        this.socket.on('road_update', (data) => this.emit('road_update', data));
+        this.socket.on('bridge_update', (data) => this.emit('bridge_update', data));
+        this.socket.on('mission_update', (data) => this.emit('mission_update', data));
+        this.socket.on('vehicle_update', (data) => this.emit('vehicle_update', data));
+        this.socket.on('shelter_update', (data) => this.emit('shelter_update', data));
+        this.socket.on('alert_update', (data) => {
+          this.emit('alert_update', data);
+          toast.show(`Emergency Alert: ${data.message || 'New operational update'}`, 'critical');
         });
-      } catch (e) {
-        console.warn('Socket.io initialization skipped or failed:', e);
+      } catch (err) {
+        console.warn('[Socket] Socket.io client failed initialization:', err.message);
       }
+    } else {
+      console.warn('[Socket] io global library not available');
     }
   }
 
-  on(event, callback) {
+  subscribe(event, callback) {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, new Set());
     }
     this.listeners.get(event).add(callback);
+
+    return () => {
+      const callbacks = this.listeners.get(event);
+      if (callbacks) {
+        callbacks.delete(callback);
+      }
+    };
   }
 
-  off(event, callback) {
-    if (this.listeners.has(event)) {
-      this.listeners.get(event).delete(callback);
+  emit(event, data) {
+    const callbacks = this.listeners.get(event);
+    if (callbacks) {
+      callbacks.forEach(cb => {
+        try { cb(data); } catch (e) { console.error(`Error in event listener [${event}]:`, e); }
+      });
     }
   }
 
-  emitLocal(event, data) {
-    if (this.listeners.has(event)) {
-      this.listeners.get(event).forEach(cb => cb(data));
-    }
+  // Simulation Helper for Testing Real-Time Stream Updates
+  simulateEvent(event, data) {
+    console.log(`[Socket Demo Stream] Simulating incoming ${event}:`, data);
+    this.emit(event, data);
   }
 }
 
-export const Socket = new SocketService();
+export const socketService = new SocketService();
+window.socketService = socketService;

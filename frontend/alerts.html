@@ -3,44 +3,66 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Emergency Alerts - DISISSTA Platform</title>
+  <meta name="description" content="Emergency alert inbox and command action center for disaster response operators.">
+  <title>Alerts & Command Center — Relief Supply Chain Platform</title>
+
+  <!-- Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- CSS Architecture -->
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/components.css">
-  <link rel="stylesheet" href="css/layout.css">
 </head>
 <body>
   <div class="app-shell">
-    <header class="topbar" id="app-topbar"></header>
-    <nav class="sidebar" id="app-sidebar"></nav>
+    <header class="app-header" id="app-header"></header>
 
-    <main class="app-content">
-      <div id="alerts-critical-banner" class="alert-banner alert-banner--critical" style="margin-bottom: var(--space-md); display: none;">
-        <span>🛑 <strong>CRITICAL UNACKNOWLEDGED ALERT:</strong> <span id="alert-banner-msg">Convoy 14 stranded in Sector 6 landslide.</span></span>
-      </div>
+    <div class="app-body">
+      <nav class="app-nav" id="app-nav" aria-label="Operational Navigation"></nav>
 
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md);">
-        <div>
-          <h1>Emergency Alert Command Inbox</h1>
-          <p style="color: var(--slate-700);">Operational incident warnings, convoy disruption alerts, and escalation actions.</p>
+      <main class="app-main" id="main-content">
+        <header style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <h1>Alerts & Command Center</h1>
+            <p class="text-sm" style="color:var(--slate-600);">Operational alert inbox, severity escalations, and command room acknowledgment actions.</p>
+          </div>
+          <div>
+            <button class="button button--secondary" id="btn-clear-ack">Clear Acknowledged</button>
+          </div>
+        </header>
+
+        <!-- Filter Bar -->
+        <div class="filter-bar" style="flex-wrap: wrap;">
+          <div class="flex items-center gap-sm">
+            <span class="text-xs font-bold uppercase">Severity Tier:</span>
+            <select style="width:auto;" id="filter-severity">
+              <option value="all">All Severities</option>
+              <option value="critical">Critical Only</option>
+              <option value="warning">Warning Only</option>
+              <option value="advisory">Advisory Only</option>
+            </select>
+          </div>
+
+          <div class="flex items-center gap-sm">
+            <span class="text-xs font-bold uppercase">Acknowledgment State:</span>
+            <select style="width:auto;" id="filter-state">
+              <option value="all">All States</option>
+              <option value="pending">Pending / Unacknowledged</option>
+              <option value="acknowledged">Acknowledged Only</option>
+              <option value="escalated">Escalated Only</option>
+            </select>
+          </div>
         </div>
-      </div>
 
-      <div class="card" style="margin-bottom: var(--space-md); flex-direction: row; justify-content: space-between; align-items: center;">
-        <div style="display: flex; gap: var(--space-sm);">
-          <select id="severity-filter" style="width: 200px;">
-            <option value="ALL">All Severities</option>
-            <option value="CRITICAL">Critical Severity Only</option>
-            <option value="WARNING">Warning Tier</option>
-            <option value="ADVISORY">Advisory Tier</option>
-          </select>
+        <!-- Alerts Inbox Container -->
+        <div style="display:flex; flex-direction:column; gap:var(--space-md);" id="alerts-container">
+          <!-- Loaded dynamically via alerts.js -->
         </div>
-      </div>
-
-      <div id="alerts-list-container" style="display: flex; flex-direction: column; gap: var(--space-sm);">
-        <!-- Injected by alerts.js -->
-      </div>
-    </main>
+      </main>
+    </div>
   </div>
 
   <script type="module" src="js/pages/alerts.js"></script>

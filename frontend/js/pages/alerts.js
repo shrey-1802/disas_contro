@@ -1,109 +1,314 @@
-/* FRONTEND EMERGENCY ALERTS PAGE CONTROLLER (Phase 9 & 28 Scenario 5) */
-import { Navbar } from '../navbar.js';
-import { ApiService, API_STATUS } from '../api.js';
-import { Toast } from '../toast.js';
-import { formatRelativeTime, escapeHTML } from '../utils.js';
+/**
+ * Alerts & Command Center Controller — Severity Inbox, Acknowledgment & Escalation Workflows
+ * Relief Supply Chain Resilience & Rerouting System (Phase 9)
+ */
+
+import { renderGlobalShell, renderCriticalAlertBanner } from '../navbar.js';
+import { api } from '../api.js';
+import { socketService } from '../socket.js';
+import { renderStatusBadge } from '../statusBadge.js';
+import { toast } from '../toast.js';
+
+let alertsInboxList = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
-  Navbar.render('alerts');
+  renderGlobalShell('alerts.html');
 
-  const container = document.getElementById('alerts-list-container');
-  const banner = document.getElementById('alerts-critical-banner');
-  const bannerMsg = document.getElementById('alert-banner-msg');
-  const filter = document.getElementById('severity-filter');
-
-  const mockAlerts = [
-    { id: 'alt-901', severity: 'CRITICAL', message: 'Convoy 14 stranded in Sector 6 debris flow. Immediate rerouting required.', region: 'Sector 6', convoyId: 'convoy-14', timestamp: new Date(Date.now() - 300000).toISOString(), acknowledged: false, escalated: false },
-    { id: 'alt-902', severity: 'WARNING', message: 'Shelter Alpha insulin supply reached critical 1.5-day threshold.', region: 'Sector 6', convoyId: null, timestamp: new Date(Date.now() - 900000).toISOString(), acknowledged: false, escalated: false },
-    { id: 'alt-903', severity: 'ADVISORY', message: 'Sensor river level rising 0.2m/hr at Bridge 4.', region: 'Sector 2', convoyId: null, timestamp: new Date(Date.now() - 1800000).toISOString(), acknowledged: true, escalated: false }
-  ];
-
-  function renderAlerts(alerts) {
-    const unackCritical = alerts.find(a => a.severity === 'CRITICAL' && !a.acknowledged);
-    if (unackCritical) {
-      bannerMsg.textContent = unackCritical.message;
-      banner.style.display = 'flex';
-    } else {
-      banner.style.display = 'none';
-    }
-
-    if (!alerts || alerts.length === 0) {
-      container.innerHTML = `<div class="card"><p>No emergency alerts in inbox.</p></div>`;
-      return;
-    }
-
-    container.innerHTML = alerts.map(a => {
-      const isCrit = a.severity === 'CRITICAL';
-      const isWarn = a.severity === 'WARNING';
-      const cardClass = isCrit ? 'card alert-banner--critical hier-critical' : isWarn ? 'card alert-banner--warning hier-situation' : 'card hier-supporting';
-
-      return `
-        <div class="${cardClass}">
-          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-            <div>
-              <div style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase;">
-                ${a.severity} SEVERITY ALERT — ${escapeHTML(a.region)}
-              </div>
-              <h3 style="font-size: 1.05rem; margin: 4px 0; color: inherit;">${escapeHTML(a.message)}</h3>
-              <div style="font-size: 0.8rem; opacity: 0.9;">
-                Issued: ${formatRelativeTime(a.timestamp)} ${a.convoyId ? `| Related Convoy: <strong>${escapeHTML(a.convoyId)}</strong>` : ''}
-              </div>
-            </div>
-
-            <div style="display: flex; gap: var(--space-xs); flex-wrap: wrap;">
-              ${!a.acknowledged ? `
-                <button class="button button--secondary ack-btn" data-id="${escapeHTML(a.id)}" style="font-size: 0.8rem; padding: 4px 10px;">
-                  Acknowledge
-                </button>
-              ` : `
-                <span class="status-badge status-badge--safe">Acknowledged</span>
-              `}
-
-              ${!a.escalated ? `
-                <button class="button button--critical esc-btn" data-id="${escapeHTML(a.id)}" style="font-size: 0.8rem; padding: 4px 10px;">
-                  Escalate to District
-                </button>
-              ` : `
-                <span class="status-badge status-badge--blocked">Escalated</span>
-              `}
-            </div>
-          </div>
-        </div>
-      `;
-    }).join('');
-
-    // Attach Handlers
-    document.querySelectorAll('.ack-btn').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        const id = e.target.dataset.id;
-        const res = await ApiService.acknowledgeAlert(id);
-        const item = alerts.find(x => x.id === id);
-        if (item) item.acknowledged = true;
-        renderAlerts(alerts);
-        Toast.show(`Alert ${id} acknowledged by operator.`, 'success');
-      });
-    });
-
-    document.querySelectorAll('.esc-btn').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        const id = e.target.dataset.id;
-        const res = await ApiService.escalateAlert(id);
-        const item = alerts.find(x => x.id === id);
-        if (item) item.escalated = true;
-        renderAlerts(alerts);
-        Toast.show(`Alert ${id} escalated to District Disaster Command.`, 'warning');
-      });
-    });
+  // Query REST API for alerts
+  try {
+    const rawAlerts = await api.getAlerts().catch(() => null);
+    alertsInboxList = rawAlerts && rawAlerts.length > 0 ? rawAlerts : getMockAlerts();
+  } catch (err) {
+    console.warn('[Alerts] API fallback notice:', err.message);
+    alertsInboxList = getMockAlerts();
   }
 
-  const res = await ApiService.getAlerts();
-  let allAlerts = (res.status === API_STATUS.SUCCESS && res.data.length) ? res.data : mockAlerts;
+  // Initial Inbox Render
+  renderAlertsInbox();
 
-  renderAlerts(allAlerts);
+  // Bind Filters & Buttons
+  document.getElementById('filter-severity')?.addEventListener('change', renderAlertsInbox);
+  document.getElementById('filter-state')?.addEventListener('change', renderAlertsInbox);
+  document.getElementById('btn-clear-ack')?.addEventListener('click', handleClearAcknowledged);
 
-  filter.addEventListener('change', () => {
-    const val = filter.value;
-    const filtered = val === 'ALL' ? allAlerts : allAlerts.filter(a => a.severity === val);
-    renderAlerts(filtered);
-  });
+  // Real-Time Socket Stream Updates
+  socketService.subscribe('alert_update', (data) => handleAlertStreamUpdate(data));
 });
+
+/* --------------------------------------------------------------------------
+   1. INBOX RENDERING ENGINE (3-TIER SEVERITY MODEL)
+   -------------------------------------------------------------------------- */
+function renderAlertsInbox() {
+  const container = document.getElementById('alerts-container');
+  if (!container) return;
+
+  const severityFilter = document.getElementById('filter-severity')?.value || 'all';
+  const stateFilter = document.getElementById('filter-state')?.value || 'all';
+
+  let filtered = [...alertsInboxList];
+
+  // Severity Filter
+  if (severityFilter !== 'all') {
+    filtered = filtered.filter(a => (a.severity || 'critical').toLowerCase() === severityFilter.toLowerCase());
+  }
+
+  // State Filter
+  if (stateFilter !== 'all') {
+    if (stateFilter === 'pending') {
+      filtered = filtered.filter(a => !a.acknowledged && !a.escalated);
+    } else if (stateFilter === 'acknowledged') {
+      filtered = filtered.filter(a => a.acknowledged === true);
+    } else if (stateFilter === 'escalated') {
+      filtered = filtered.filter(a => a.escalated === true);
+    }
+  }
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div class="card" style="text-align:center; padding:var(--space-xl); color:var(--slate-600);">
+        <span style="font-size:32px; display:block; margin-bottom:8px;">🚨</span>
+        <h3>No operational alerts match the selected criteria</h3>
+        <p class="text-xs">Adjust your severity or acknowledgment state filters.</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = filtered.map(item => {
+    const id = item.id || `ALT-${Math.floor(100 + Math.random() * 900)}`;
+    const severity = (item.severity || 'critical').toLowerCase();
+    const title = item.title || item.message || 'Operational System Alert';
+    const description = item.description || item.details || 'Immediate command attention required.';
+    const location = item.location || item.region || 'Sector 6';
+    const timestamp = formatTimeAgo(item.timestamp);
+    const source = item.source || 'Automated Telemetry';
+    const isAck = item.acknowledged === true;
+    const isEsc = item.escalated === true;
+
+    // Severity Badge & Card Border
+    let cardCSS = 'card--critical';
+    let badgeHTML = `<span class="priority-badge priority-badge--critical">CRITICAL SEVERITY</span>`;
+
+    if (severity === 'warning') {
+      cardCSS = 'card--warning';
+      badgeHTML = `<span class="priority-badge priority-badge--high">WARNING SEVERITY</span>`;
+    } else if (severity === 'advisory') {
+      cardCSS = '';
+      badgeHTML = `<span class="priority-badge priority-badge--medium">ADVISORY</span>`;
+    }
+
+    // State Badge
+    let stateBadgeHTML = '';
+    if (isEsc) {
+      stateBadgeHTML = renderStatusBadge('blocked', 'ESCALATED TO DISTRICT COMMAND');
+    } else if (isAck) {
+      stateBadgeHTML = renderStatusBadge('safe', '✓ ACKNOWLEDGED');
+    } else {
+      stateBadgeHTML = renderStatusBadge('caution', 'PENDING ACTION');
+    }
+
+    // Action Buttons
+    const mapLinkHTML = item.link
+      ? `<a href="${item.link}" class="button button--secondary text-xs">🗺️ Open Map Context</a>`
+      : `<a href="live-map.html" class="button button--secondary text-xs">🗺️ Locate on Map</a>`;
+
+    let actionButtonsHTML = '';
+    if (!isAck && !isEsc) {
+      actionButtonsHTML = `
+        <button class="button button--secondary text-xs btn-ack-alert" data-id="${id}">Acknowledge</button>
+        <button class="button button--critical text-xs btn-esc-alert" data-id="${id}">Escalate to District Command</button>
+      `;
+    } else if (isAck && !isEsc) {
+      actionButtonsHTML = `
+        <button class="button button--critical text-xs btn-esc-alert" data-id="${id}">Escalate to District Command</button>
+      `;
+    }
+
+    return `
+      <div class="card ${cardCSS}" id="alert-card-${id}">
+        <div class="card__header">
+          <div class="flex items-center gap-sm">
+            ${badgeHTML}
+            <h3 class="card__title" style="font-size:var(--font-size-base);">${title}</h3>
+          </div>
+          <span class="text-xs" style="color:var(--slate-600);">${timestamp}</span>
+        </div>
+        <p class="text-sm" style="margin-bottom:var(--space-sm); color:var(--slate-800);">${description}</p>
+        <div class="flex items-center justify-between text-xs" style="color:var(--slate-600); margin-bottom:var(--space-sm);">
+          <div>Location: <strong>${location}</strong> | Source: <strong>${source}</strong></div>
+          <div>State: ${stateBadgeHTML}</div>
+        </div>
+        <div class="flex items-center justify-between" style="border-top:1px solid var(--sage-100); padding-top:var(--space-sm);">
+          ${mapLinkHTML}
+          <div class="flex gap-sm" id="alert-actions-${id}">
+            ${actionButtonsHTML}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Attach Action Button Listeners
+  document.querySelectorAll('.btn-ack-alert').forEach(btn => {
+    btn.addEventListener('click', (e) => handleAcknowledge(e.target.getAttribute('data-id')));
+  });
+  document.querySelectorAll('.btn-esc-alert').forEach(btn => {
+    btn.addEventListener('click', (e) => handleEscalate(e.target.getAttribute('data-id')));
+  });
+}
+
+/* --------------------------------------------------------------------------
+   2. ACKNOWLEDGMENT WORKFLOW (PATCH /api/alerts/:id/acknowledge)
+   -------------------------------------------------------------------------- */
+async function handleAcknowledge(id) {
+  try {
+    // API request to acknowledge alert
+    await api.acknowledgeAlert(id).catch(err => {
+      throw new Error(err.message || 'Server acknowledgment failed');
+    });
+
+    // On Success: Update local state, PRESERVE in history (do NOT delete completely)
+    const alert = alertsInboxList.find(a => (a.id === id || a.alert_id === id));
+    if (alert) {
+      alert.acknowledged = true;
+    }
+
+    // Update global persistent critical banner state if this was critical
+    const stored = localStorage.getItem('unacknowledged_critical_alert');
+    if (stored) {
+      try {
+        const activeObj = JSON.parse(stored);
+        if (activeObj.id === id) {
+          activeObj.acknowledged = true;
+          localStorage.setItem('unacknowledged_critical_alert', JSON.stringify(activeObj));
+          renderCriticalAlertBanner(activeObj);
+        }
+      } catch (e) {}
+    }
+
+    renderAlertsInbox();
+    toast.show(`Alert #${id} acknowledged by operator`, 'safe', 3000);
+
+  } catch (err) {
+    // NEVER fake success if API call fails
+    console.error('[Alerts] Acknowledgment error:', err.message);
+    toast.show(`Acknowledgment failed: Alert #${id} remains unacknowledged`, 'critical', 4000);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   3. ESCALATION WORKFLOW (PATCH /api/alerts/:id/escalate)
+   -------------------------------------------------------------------------- */
+async function handleEscalate(id) {
+  try {
+    // API request to escalate alert
+    await api.escalateAlert(id).catch(err => {
+      throw new Error(err.message || 'Server escalation failed');
+    });
+
+    // On Success: Update local state to Escalated
+    const alert = alertsInboxList.find(a => (a.id === id || a.alert_id === id));
+    if (alert) {
+      alert.escalated = true;
+    }
+
+    renderAlertsInbox();
+    toast.show(`Alert #${id} ESCALATED to District Command`, 'warning', 3500);
+
+  } catch (err) {
+    // NEVER fake success if API call fails
+    console.error('[Alerts] Escalation error:', err.message);
+    toast.show(`Escalation failed: Could not escalate Alert #${id} to server`, 'critical', 4000);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   4. CLEAR ACKNOWLEDGED & SOCKET STREAM HANDLERS
+   -------------------------------------------------------------------------- */
+function handleClearAcknowledged() {
+  const initialCount = alertsInboxList.length;
+  alertsInboxList = alertsInboxList.filter(a => !a.acknowledged);
+  const clearedCount = initialCount - alertsInboxList.length;
+
+  renderAlertsInbox();
+  toast.show(`Cleared ${clearedCount} acknowledged alert(s) from current view`, 'safe', 2500);
+}
+
+function handleAlertStreamUpdate(data) {
+  const newAlert = {
+    id: data.id || `ALT-${Math.floor(100 + Math.random() * 900)}`,
+    title: data.title || data.message || 'Real-Time Operational Alert',
+    description: data.details || data.message || 'Telemetry anomaly reported over socket stream.',
+    severity: data.severity || 'critical',
+    location: data.location || 'Sector 6',
+    source: data.source || 'Socket Telemetry',
+    timestamp: new Date().toISOString(),
+    acknowledged: false,
+    escalated: false
+  };
+
+  alertsInboxList.unshift(newAlert);
+  renderAlertsInbox();
+
+  // If critical, update persistent top banner
+  if (newAlert.severity === 'critical') {
+    localStorage.setItem('unacknowledged_critical_alert', JSON.stringify(newAlert));
+    renderCriticalAlertBanner(newAlert);
+    toast.show(`🛑 CRITICAL ALERT: ${newAlert.title}`, 'critical', 5000);
+  } else {
+    toast.show(`🚨 ALERT: ${newAlert.title}`, 'warning', 3000);
+  }
+}
+
+function formatTimeAgo(isoString) {
+  if (!isoString) return '3 mins ago';
+  const diffMs = Date.now() - new Date(isoString).getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins} mins ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
+
+// Fallback Mock Operational Alerts
+function getMockAlerts() {
+  return [
+    {
+      id: 'ALT-101',
+      title: 'Convoy CV-014 Path Stranded Risk — Sector 6',
+      description: 'Bridge B-14 closed due to 1.4m water depth. Convoy CV-014 carrying refrigerated insulin requires rerouting approval to bypass damaged bridge via Route D.',
+      severity: 'critical',
+      location: 'Sector 6 (Bridge B-14)',
+      source: 'Bridge Sensor Telemetry',
+      timestamp: new Date(Date.now() - 3 * 60000).toISOString(),
+      acknowledged: false,
+      escalated: false,
+      link: 'live-map.html?convoy=CV-014'
+    },
+    {
+      id: 'ALT-102',
+      title: 'Shelter 06 Medical Reserve Depletion Risk',
+      description: 'Insulin inventory estimated remaining under 12 hours (0.5 days). Priority dispatch CV-014 delayed due to bridge submersion.',
+      severity: 'warning',
+      location: 'East Valley Sector 4',
+      source: 'Shelter Supply Monitor',
+      timestamp: new Date(Date.now() - 28 * 60000).toISOString(),
+      acknowledged: false,
+      escalated: false,
+      link: 'shelter-board.html'
+    },
+    {
+      id: 'ALT-103',
+      title: 'Route C Feeder Corridor Passability Caution',
+      description: 'Minor hillside mud accumulation detected by satellite imagery. Passable for heavy clearance convoys only.',
+      severity: 'advisory',
+      location: 'Sector 2 Feeder C',
+      source: 'Satellite Imagery Stream',
+      timestamp: new Date(Date.now() - 90 * 60000).toISOString(),
+      acknowledged: true,
+      escalated: false,
+      link: 'live-map.html'
+    }
+  ];
+}
