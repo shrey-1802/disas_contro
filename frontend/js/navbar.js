@@ -1,189 +1,103 @@
-/**
- * Navigation & Global Application Shell Controller
- * Relief Supply Chain Resilience & Rerouting System
- */
+/* ==========================================
+   DISISTA CONTROL — NAVBAR COMPONENT
+   Role-Scoped Shared Top & Navigation Bar
+   ========================================== */
 
-import { auth, ROLES } from './auth.js';
-import { SearchUtil } from './search.js';
+const NAV_ITEMS = [
+  { id: 'live-map.html', label: 'Live Map', icon: '🌐' },
+  { id: 'dashboard.html', label: 'Dashboard', icon: '📊' },
+  { id: 'convoy-dispatch.html', label: 'Convoy Dispatch', icon: '🚛' },
+  { id: 'shelter-board.html', label: 'Shelter Board', icon: '🏛️' },
+  { id: 'hazard-log.html', label: 'Hazard Log', icon: '⚠️' },
+  { id: 'supply-swap.html', label: 'Supply Swap', icon: '📦' },
+  { id: 'alerts.html', label: 'Alerts Inbox', icon: '🔔' },
+  { id: 'settings.html', label: 'Settings', icon: '⚙️' }
+];
 
-export function renderGlobalShell(activePageFilename) {
-  const currentRole = auth.getRole();
-  const currentUser = auth.getUser();
-
-  // Enforce access permission
-  if (!auth.canAccessPage(activePageFilename)) {
-    console.warn(`[Nav] Access denied for role ${currentRole} to page ${activePageFilename}`);
+class NavbarComponent {
+  constructor() {
+    this.currentScreen = window.location.pathname.split('/').pop() || 'index.html';
   }
 
-  // Render Top Operational Bar
-  const headerElem = document.getElementById('app-header');
-  if (headerElem) {
-    headerElem.innerHTML = `
-      <div class="app-header__identity">
-        <div class="app-header__emblem" title="Government Emergency Management System">GOV</div>
-        <div class="app-header__title">
-          <span class="app-header__sysname">DISISSTA OPERATIONAL CONTROL</span>
-          <span class="app-header__subtitle">Relief Supply Chain & Rerouting Platform</span>
-        </div>
+  render() {
+    // Enforce route guard
+    if (window.auth && !window.auth.guardRoute(this.currentScreen)) {
+      return;
+    }
+
+    const user = window.auth ? window.auth.getCurrentUser() : null;
+    const roleId = user ? user.role : 'control_room';
+    const roleConfig = window.ROLES ? Object.values(window.ROLES).find(r => r.id === roleId) : null;
+    const allowedNavs = roleConfig ? roleConfig.nav : NAV_ITEMS.map(n => n.id);
+
+    const header = document.createElement('header');
+    header.className = 'app-header';
+    header.innerHTML = `
+      <div style="display: flex; align-items: center; gap: var(--space-5);">
+        <a href="${roleConfig ? roleConfig.defaultScreen : 'live-map.html'}" class="brand">
+          <div class="brand-emblem">D</div>
+          <div class="brand-title">
+            <span class="brand-name">DISISTA CONTROL</span>
+            <span class="brand-sub">Relief Route Intelligence</span>
+          </div>
+        </a>
+
+        <nav class="app-nav" style="display: flex; gap: var(--space-1);">
+          ${NAV_ITEMS.filter(item => allowedNavs.includes(item.id)).map(item => `
+            <a href="${item.id}" class="nav-link ${this.currentScreen === item.id ? 'active' : ''}" style="
+              display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px;
+              color: ${this.currentScreen === item.id ? 'var(--white)' : 'var(--sage-100)'};
+              background: ${this.currentScreen === item.id ? 'var(--forest-600)' : 'transparent'};
+              border-radius: var(--radius); text-decoration: none; font-size: var(--text-sm); font-weight: 500;
+              transition: background var(--motion-fast) var(--ease);
+            ">
+              <span>${item.icon}</span>
+              <span>${item.label}</span>
+            </a>
+          `).join('')}
+        </nav>
       </div>
 
-      <div class="app-header__center">
-        <div class="search-bar">
-          <span class="search-bar__icon">🔍</span>
-          <input type="search" id="global-search-input" placeholder="Search inventory, warehouse, convoy, shelter... (Ctrl+K)" aria-label="Global Operational Search">
-        </div>
-      </div>
-
-      <div class="app-header__actions">
-        <div class="sync-indicator" id="last-sync-indicator" title="System Synchronization Status">
-          <span>🔄</span> <span id="sync-timestamp-text">Synced 12s ago</span>
+      <div class="header-controls">
+        <div class="system-status">
+          <span class="status-dot"></span>
+          <span id="nav-sync-status">SYNCED 1m AGO</span>
         </div>
 
-        <div class="connectivity-indicator connectivity-indicator--online" id="connectivity-indicator-badge">
-          <span class="connectivity-indicator__dot"></span>
-          <span id="connectivity-status-text">ONLINE</span>
-        </div>
-
-        <button class="button button--secondary text-xs" id="field-mode-toggle" title="Toggle Field Mode (High-contrast outdoor tablet optimization)">
-          ${auth.isFieldMode() ? '☀️ Field Mode ON' : '📱 Field Mode'}
+        <button class="btn btn-toggle" id="nav-field-btn" onclick="auth.toggleFieldMode(); navbar.updateFieldBtn();">
+          ${auth.isFieldMode() ? 'Field Mode: ON' : 'Field Mode: OFF'}
         </button>
 
-        <div class="app-header__user" style="display:flex; align-items:center; gap:8px;">
-          <span class="priority-badge priority-badge--high">${currentRole}</span>
-          <button class="button button--secondary text-xs" id="logout-btn" title="Exit Operational Session">Logout</button>
+        <div style="display: flex; align-items: center; gap: var(--space-2); padding-left: var(--space-3); border-left: 1px solid rgba(255,255,255,0.2);">
+          <span class="badge badge-safe" style="background: rgba(255,255,255,0.15); color: var(--white); border-color: rgba(255,255,255,0.3);">
+            ${roleConfig ? roleConfig.badge : 'Operator'}
+          </span>
+          <button class="btn btn-toggle" onclick="auth.logout()" title="Sign Out" style="background: rgba(0,0,0,0.2); color: var(--white);">
+            Logout
+          </button>
         </div>
       </div>
     `;
 
-    // Bind Header Events
-    document.getElementById('global-search-input')?.addEventListener('focus', () => {
-      const modal = SearchUtil.createModal();
-      if (modal) {
-        modal.style.display = 'flex';
-        const modalInput = modal.querySelector('#modal-search-input');
-        if (modalInput) modalInput.focus();
-      }
-    });
-
-    document.getElementById('field-mode-toggle')?.addEventListener('click', () => {
-      auth.toggleFieldMode();
-      renderGlobalShell(activePageFilename);
-    });
-
-    document.getElementById('logout-btn')?.addEventListener('click', () => {
-      auth.logout();
-    });
-  }
-
-
-  // Render Role-Based Navigation Sidebar
-  const navElem = document.getElementById('app-nav');
-  if (navElem) {
-    const navItems = [
-      { id: 'dashboard.html', label: 'Overview Dashboard', icon: '📊', roles: [ROLES.CONTROL_ROOM, ROLES.DISTRICT_ADMIN, ROLES.FIELD_DRIVER] },
-      { id: 'live-map.html', label: 'Live Operations Map', icon: '🗺️', roles: [ROLES.CONTROL_ROOM, ROLES.DISTRICT_ADMIN, ROLES.FIELD_DRIVER] },
-      { id: 'supply-swap.html', label: 'Supply Swap', icon: '🔄', badge: '07', roles: [ROLES.CONTROL_ROOM, ROLES.DISTRICT_ADMIN] },
-      { id: 'convoy-dispatch.html', label: 'Convoy Dispatch', icon: '🚛', roles: [ROLES.CONTROL_ROOM, ROLES.DISTRICT_ADMIN] },
-      { id: 'shelter-board.html', label: 'Shelter & Supply Board', icon: '🏠', roles: [ROLES.CONTROL_ROOM, ROLES.DISTRICT_ADMIN] },
-      { id: 'hazard-log.html', label: 'Hazard & Incident Log', icon: '⚠️', roles: [ROLES.CONTROL_ROOM, ROLES.FIELD_DRIVER] },
-      { id: 'alerts.html', label: 'Alerts & Commands', icon: '🚨', badge: '03', roles: [ROLES.CONTROL_ROOM, ROLES.DISTRICT_ADMIN] },
-      { id: 'settings.html', label: 'System Settings', icon: '⚙️', roles: [ROLES.CONTROL_ROOM, ROLES.DISTRICT_ADMIN, ROLES.FIELD_DRIVER] }
-    ];
-
-    const filteredItems = navItems.filter(item => item.roles.includes(currentRole));
-
-    navElem.innerHTML = `
-      <ul class="app-nav__list">
-        ${filteredItems.map(item => `
-          <li class="app-nav__item ${activePageFilename === item.id ? 'active' : ''}">
-            <a href="${item.id}">
-              <span class="app-nav__icon">${item.icon}</span>
-              <span class="app-nav__label">${item.label}</span>
-              ${item.badge ? `<span class="priority-badge priority-badge--high" style="margin-left:auto; font-size:10px; padding:1px 6px;">${item.badge}</span>` : ''}
-            </a>
-          </li>
-        `).join('')}
-      </ul>
-    `;
-
-  }
-
-  // Check & Render Persistent Critical Alert Banner
-  renderCriticalAlertBanner();
-
-  // Listen for connectivity changes
-  window.addEventListener('connectivityChange', (e) => {
-    const indicator = document.getElementById('connectivity-indicator-badge');
-    const text = document.getElementById('connectivity-status-text');
-    if (indicator && text) {
-      if (e.detail.online) {
-        indicator.className = 'connectivity-indicator connectivity-indicator--online';
-        text.textContent = 'ONLINE';
-      } else {
-        indicator.className = 'connectivity-indicator connectivity-indicator--offline';
-        text.textContent = 'OFFLINE MODE';
-      }
-    }
-  });
-}
-
-/**
- * Render or update persistent critical alert banner across application screens
- */
-export function renderCriticalAlertBanner(alertData) {
-  let activeAlert = alertData;
-  if (!activeAlert) {
-    const stored = localStorage.getItem('unacknowledged_critical_alert');
-    if (stored) {
-      try { activeAlert = JSON.parse(stored); } catch (e) { activeAlert = null; }
+    const existingHeader = document.querySelector('.app-header');
+    if (existingHeader) {
+      existingHeader.replaceWith(header);
+    } else {
+      document.body.prepend(header);
     }
   }
 
-  if (!activeAlert) {
-    // Fallback default critical alert if none stored
-    activeAlert = {
-      id: 'ALT-101',
-      title: 'Convoy CV-014 Stranded — Sector 6',
-      message: 'Bridge B-14 Submerged in 1.4m floodwater',
-      acknowledged: false
-    };
-    localStorage.setItem('unacknowledged_critical_alert', JSON.stringify(activeAlert));
-  }
-
-  let bannerElem = document.getElementById('global-critical-banner');
-  const mainElem = document.getElementById('main-content');
-
-  if (!mainElem) return;
-
-  if (activeAlert && !activeAlert.acknowledged) {
-    if (!bannerElem) {
-      bannerElem = document.createElement('div');
-      bannerElem.id = 'global-critical-banner';
-      bannerElem.className = 'critical-banner';
-      mainElem.parentNode.insertBefore(bannerElem, mainElem);
+  updateFieldBtn() {
+    const btn = document.getElementById('nav-field-btn');
+    if (btn && window.auth) {
+      const isField = window.auth.isFieldMode();
+      btn.innerText = `Field Mode: ${isField ? 'ON' : 'OFF'}`;
+      btn.classList.toggle('active', isField);
     }
-    bannerElem.style.display = 'flex';
-    bannerElem.innerHTML = `
-      <div class="critical-banner__content">
-        <span class="critical-banner__badge">CRITICAL</span>
-        <span>🚨 <strong>${activeAlert.title}</strong> — ${activeAlert.message || 'Requires immediate command room attention'}</span>
-      </div>
-      <div>
-        <a href="alerts.html" class="button button--secondary text-xs" style="background:#FFF; color:var(--slate-900); padding:2px 10px;">View Command Center</a>
-      </div>
-    `;
-  } else if (bannerElem) {
-    bannerElem.style.display = 'none';
   }
 }
 
-export const Navbar = {
-  render(page) {
-    const pageFile = page ? (page.endsWith('.html') ? page : `${page}.html`) : 'dashboard.html';
-    renderGlobalShell(pageFile);
-  },
-  renderGlobalShell,
-  renderCriticalAlertBanner
-};
-
-export default Navbar;
+document.addEventListener('DOMContentLoaded', () => {
+  window.navbar = new NavbarComponent();
+  window.navbar.render();
+});

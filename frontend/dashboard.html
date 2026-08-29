@@ -3,39 +3,122 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Warehouse Manager Decision Center — Inventory Health, Priority Shortage Actions, and Supply Swap Opportunities.">
-  <title>Warehouse Manager Decision Center — Relief Supply Chain System</title>
+  <title>DISISTA CONTROL — Warehouse Logistics Dashboard</title>
+  <meta name="description" content="Warehouse Manager Inventory & Dispatch Dashboard">
 
-  <!-- Typography -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-  <!-- CSS Architecture -->
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/components.css">
+
+  <style>
+    .summary-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: var(--space-4);
+      margin-bottom: var(--space-5);
+    }
+    .metric-card {
+      background: var(--white);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius);
+      padding: var(--space-4);
+    }
+  </style>
 </head>
 <body>
-  <div class="app-shell">
-    <header class="app-header" id="app-header"></header>
 
-    <div class="app-body">
-      <nav class="app-nav" id="app-nav" aria-label="Operational Navigation"></nav>
-
-      <main class="app-main" id="main-content">
-        <header style="margin-bottom: var(--space-md);">
-          <h1 id="dashboard-title">Warehouse Manager Decision Center</h1>
-          <p id="dashboard-subtitle" style="color: var(--slate-700);">Regional Warehouse Alpha &bull; Real-time status overview for emergency response personnel.</p>
-        </header>
-
-        <div id="role-dashboard-container" style="display: grid; grid-template-columns: 1fr; gap: var(--space-md);">
-          <!-- Injected dynamically by dashboard.js -->
+  <main class="page-main">
+    <div class="container" style="margin-top: var(--space-5);">
+      <!-- HEADER -->
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-5);">
+        <div>
+          <span class="panel-label">WAREHOUSE HUB MANAGEMENT</span>
+          <h2>Hub Alpha (Central Depot) Dashboard</h2>
         </div>
-      </main>
-    </div>
-  </div>
+        <div style="display: flex; gap: var(--space-2);">
+          <span class="badge badge-safe">Logistics Hub</span>
+          <button class="btn btn-primary" onclick="window.location.href='convoy-dispatch.html'">+ Dispatch Convoy</button>
+        </div>
+      </div>
 
-  <script type="module" src="js/pages/dashboard.js"></script>
+      <!-- INVENTORY METRICS -->
+      <div class="summary-strip">
+        <div class="metric-card">
+          <span class="text-meta">ON-HAND INVENTORY</span>
+          <div class="data-numeral">14,000 Units</div>
+        </div>
+        <div class="metric-card" style="border-left: 4px solid var(--forest-600);">
+          <span class="text-meta">RESERVED FOR CONVOYS</span>
+          <div class="data-numeral" style="color: var(--forest-600);">2,000 Units</div>
+        </div>
+        <div class="metric-card" style="border-left: 4px solid var(--sage-500);">
+          <span class="text-meta">AVAILABLE FOR DISPATCH</span>
+          <div class="data-numeral" style="color: var(--forest-700);">12,000 Units</div>
+        </div>
+        <div class="metric-card" style="border-left: 4px solid var(--slate-800);">
+          <span class="text-meta">SUPPLY SWAP OPPORTUNITIES</span>
+          <div class="data-numeral" style="color: var(--slate-800);">3 Matches</div>
+        </div>
+      </div>
+
+      <!-- CARDS GRID -->
+      <div style="display: grid; grid-template-columns: 2fr 1fr; gap: var(--space-5);">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Hub Alpha Active Convoys</span>
+            <button class="btn btn-secondary" onclick="window.location.href='convoy-dispatch.html'">View Dispatch Board →</button>
+          </div>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Convoy Name</th>
+                  <th>Cargo</th>
+                  <th>Destination</th>
+                  <th>Status</th>
+                  <th>ETA</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Convoy 14</strong></td>
+                  <td>Insulin & Blood Products</td>
+                  <td>Shelter 12</td>
+                  <td><span class="badge badge-safe">On Route</span></td>
+                  <td>14:20 UTC</td>
+                </tr>
+                <tr>
+                  <td><strong>Convoy 35</strong></td>
+                  <td>Emergency Food Rations</td>
+                  <td>Shelter 04</td>
+                  <td><span class="badge badge-caution">Picking Cargo</span></td>
+                  <td>16:00 UTC</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card warning">
+          <div class="card-header">
+            <span class="card-title">Supply Swap Alert</span>
+            <span class="badge badge-caution">3 Pending</span>
+          </div>
+          <p style="font-size: var(--text-sm); margin-bottom: var(--space-4);">
+            Shelter 19 is isolated and critically short on Insulin. Hub Bravo has surplus capacity.
+          </p>
+          <button class="btn btn-primary" style="width: 100%;" onclick="window.location.href='supply-swap.html'">
+            Open Supply Swap Engine →
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/auth.js"></script>
+  <script src="js/statusBadge.js"></script>
+  <script src="js/toast.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/navbar.js"></script>
 </body>
 </html>

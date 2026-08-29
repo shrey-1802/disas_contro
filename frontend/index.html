@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DISISTA CONTROL — Relief Route Intelligence</title>
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+</head>
+<body>
+  <script src="js/auth.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const user = auth.getCurrentUser();
+      if (user && user.role) {
+        const roleConfig = Object.values(ROLES).find(r => r.id === user.role);
+        if (roleConfig) {
+          window.location.href = roleConfig.defaultScreen;
+          return;
+        }
+      }
+      window.location.href = 'login.html';
+    });
+  </script>
+</body>
+</html>

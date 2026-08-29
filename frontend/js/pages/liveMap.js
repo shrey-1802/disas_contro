@@ -1,631 +1,391 @@
-import { renderGlobalShell } from '../navbar.js';
-import { Store } from '../store.js';
-import { socketService } from '../socket.js';
-import { renderStatusBadge } from '../statusBadge.js';
-import { toast } from '../toast.js';
+/* ==========================================
+   DISISTA CONTROL — LIVE MAP MANAGER
+   Leaflet Cartography, Hazard Fusion, and Road Blocking
+   ========================================== */
 
-let map = null;
-let floodLayerGroup = null;
-let debrisLayerGroup = null;
-let bridgeLayerGroup = null;
-let convoyLayerGroup = null;
-let shelterLayerGroup = null;
+class LiveMapManager {
+  constructor() {
+    this.map = null;
+    this.layers = {
+      convoys: L.layerGroup(),
+      hazards: L.layerGroup(),
+      shelters: L.layerGroup(),
+      warehouses: L.layerGroup(),
+      routes: L.layerGroup()
+    };
 
-const entityPatchRegistry = new Map();
-let currentlyInspectedEntityId = null;
-
-const MAP_CENTER = [27.7172, 85.3240];
-const DEFAULT_ZOOM = 13;
-
-document.addEventListener('DOMContentLoaded', async () => {
-  renderGlobalShell('live-map.html');
-
-  initLeafletMap();
-  refreshMapLayers();
-
-  // Bind Left Layer Controls
-  bindLayerControls();
-
-  // Check URL query parameters (e.g., ?convoy=CV-014 or ?hazard=B14 or ?shelter=Shelter06)
-  const urlParams = new URLSearchParams(window.location.search);
-  const targetConvoyId = urlParams.get('convoy') || urlParams.get('hazard') || urlParams.get('shelter');
-  if (targetConvoyId) {
-    selectEntityById(targetConvoyId);
-  }
-
-  // Reactive store updates
-  window.addEventListener('store-updated', () => {
-    refreshMapLayers();
-  });
-});
-
-function refreshMapLayers() {
-  if (!map) return;
-  const roads = Store.getRoads();
-  const bridges = Store.getBridges();
-  const shelters = Store.getShelters();
-  const missions = Store.getMissions();
-
-  if (debrisLayerGroup) debrisLayerGroup.clearLayers();
-  if (bridgeLayerGroup) bridgeLayerGroup.clearLayers();
-  if (shelterLayerGroup) shelterLayerGroup.clearLayers();
-  if (convoyLayerGroup) convoyLayerGroup.clearLayers();
-
-  renderFloodOverlays();
-  renderDebrisCorridors(roads);
-  renderBridgeMarkers(bridges);
-  renderShelterMarkers(shelters);
-  renderConvoyMarkers(missions, []);
-}
-
-
-  // Hook global search input
-  const searchInput = document.getElementById('global-search-input');
-  if (searchInput) {
-    searchInput.addEventListener('input', (e) => {
-      const q = e.target.value.trim().toUpperCase();
-      if (q.length >= 2) {
-        selectEntityById(q);
-      }
-    });
-  }
-
-  // Phase 5 Requirement: Subscribe to Socket.io events with zero-flicker patch updates
-  socketService.subscribe('mission_update', (data) => patchConvoyObject(data));
-  socketService.subscribe('vehicle_update', (data) => patchVehicleObject(data));
-  socketService.subscribe('bridge_update', (data) => patchBridgeObject(data));
-  socketService.subscribe('shelter_update', (data) => patchShelterObject(data));
-  socketService.subscribe('road_update', (data) => patchRoadObject(data));
-});
-
-/* --------------------------------------------------------------------------
-   1. MAP INITIALIZATION
-   -------------------------------------------------------------------------- */
-function initLeafletMap() {
-  const container = document.getElementById('map-canvas') || document.getElementById('map');
-  if (!container) return;
-
-  if (typeof L === 'undefined') {
-    container.innerHTML = `
-      <div style="display:flex; height:100%; flex-direction:column; align-items:center; justify-content:center; background:var(--sage-100); color:var(--slate-800); padding:var(--space-lg); text-align:center;">
-        <h3>🗺️ Live Map Offline Renderer</h3>
-        <p style="max-width:500px; margin-top:8px;">Leaflet map library could not be loaded from remote CDN. Operating in field fallback mode. Map layers and spatial telemetry are cached locally.</p>
-      </div>
-    `;
-    return;
-  }
-
-  map = L.map(container, {
-    center: MAP_CENTER,
-    zoom: DEFAULT_ZOOM,
-    zoomControl: true
-  });
-
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '© Government Emergency Operations | OpenStreetMap'
-  }).addTo(map);
-
-  floodLayerGroup = L.layerGroup().addTo(map);
-  debrisLayerGroup = L.layerGroup().addTo(map);
-  bridgeLayerGroup = L.layerGroup().addTo(map);
-  convoyLayerGroup = L.layerGroup().addTo(map);
-  shelterLayerGroup = L.layerGroup().addTo(map);
-}
-
-
-/* --------------------------------------------------------------------------
-   2. INITIAL MARKER & OVERLAY RENDERING
-   -------------------------------------------------------------------------- */
-function renderFloodOverlays() {
-  const floodZone = [
-    [27.7250, 85.3300],
-    [27.7320, 85.3420],
-    [27.7210, 85.3500],
-    [27.7150, 85.3350]
-  ];
-
-  const poly = L.polygon(floodZone, {
-    color: '#3A4750',
-    fillColor: '#5A7A68',
-    fillOpacity: 0.45,
-    weight: 2
-  }).addTo(floodLayerGroup);
-
-  poly.bindPopup(`
-    <div style="font-family:var(--font-sans); padding:4px;">
-      <div style="font-weight:700; font-size:14px; color:var(--slate-800);">Submerged River Tributary Zone</div>
-      <div style="margin:4px 0;">${renderStatusBadge('blocked', 'FLOOD DEPTH 1.4m')}</div>
-      <div class="text-xs" style="color:var(--slate-600);">Source: <strong>River Water Sensor #04</strong></div>
-      <div class="text-xs" style="color:var(--slate-600);">Reported: <strong>3 min ago</strong> | Confidence: <strong>94%</strong></div>
-      <div class="text-xs" style="color:var(--slate-600);">Region: <strong>Sector 6 River Basin</strong></div>
-    </div>
-  `);
-}
-
-function renderDebrisCorridors(roads) {
-  const data = (roads && roads.length > 0) ? roads : getMockRoads();
-
-  data.forEach(r => {
-    const roadId = r.id || r.road_id || 'ROAD-C';
-    const polylineCoords = r.coordinates || r.polyline || [
-      [27.7100, 85.3100],
-      [27.7150, 85.3200],
-      [27.7180, 85.3250]
+    // State
+    this.hazardsData = [
+      { id: 'haz-101', name: 'Route 4 Flash Flood', lat: 14.625, lng: 120.980, type: 'Flash Flood', severity: 'hazardous', confidence: 85, confirmed: false, notes: 'Water depth 1.2m across 400m stretch.' },
+      { id: 'haz-102', name: 'Bridge B14 Submerged', lat: 14.640, lng: 120.970, type: 'Bridge Impassable', severity: 'impassable', confidence: 98, confirmed: true, notes: 'Bridge deck submerged. Structural failure risk.' }
     ];
 
-    const line = L.polyline(polylineCoords, {
-      color: r.status === 'blocked' || r.status === 'impassable' ? '#8B0000' : '#3A4750',
-      weight: 5,
-      dashArray: '8, 8',
-      opacity: 0.85
-    }).addTo(debrisLayerGroup);
+    this.convoysData = [
+      { id: 'convoy-14', name: 'Convoy 14', cargo: 'Insulin & Blood Products', priority: 'Insulin/Blood', origin: 'Hub Alpha', dest: 'Shelter 12', status: 'On Route', lat: 14.615, lng: 120.970, route: [[14.6095, 120.9742], [14.625, 120.980], [14.6495, 120.9642]] },
+      { id: 'convoy-22', name: 'Convoy 22', cargo: 'Infant Nutrition & Water', priority: 'Infant Nutrition', origin: 'Hub Bravo', dest: 'Shelter 04', status: 'Rerouted', lat: 14.630, lng: 121.005, route: [[14.6395, 120.9942], [14.630, 121.005], [14.6295, 121.0242]] },
+      { id: 'convoy-09', name: 'Convoy 09', cargo: 'General Relief Supplies', priority: 'General', origin: 'Hub Charlie', dest: 'Shelter 19', status: 'Stranded', lat: 14.570, lng: 120.980, route: [[14.5795, 121.0142], [14.570, 120.980], [14.5595, 120.9442]] }
+    ];
 
-    entityPatchRegistry.set(roadId, { layer: line, data: r, type: 'road' });
+    this.sheltersData = [
+      { id: 'shelter-12', name: 'Shelter 12 (North Community)', lat: 14.6495, lng: 120.9642, pop: 1450, daysSupply: 1.5, urgency: 'critical', isolated: false },
+      { id: 'shelter-04', name: 'Shelter 04 (Rift Valley High)', lat: 14.6295, lng: 121.0242, pop: 920, daysSupply: 3.2, urgency: 'caution', isolated: false },
+      { id: 'shelter-19', name: 'Shelter 19 (Island Reach)', lat: 14.5595, lng: 120.9442, pop: 2100, daysSupply: 0.5, urgency: 'critical', isolated: true }
+    ];
 
-    line.bindPopup(`
-      <div style="font-family:var(--font-sans); padding:4px;">
-        <div style="font-weight:700; font-size:14px;">${r.name || 'Feeder Road Segment'}</div>
-        <div style="margin:4px 0;" id="popup-road-${roadId}-status">${renderStatusBadge(r.status || 'degraded', r.status_label || 'CAUTION — DEBRIS')}</div>
-        <div class="text-xs" style="color:var(--slate-600);">Source: <strong>${r.source || 'Field Incident Telemetry'}</strong></div>
-        <div class="text-xs" style="color:var(--slate-600);">Reported: <strong>${r.reported || '14 min ago'}</strong> | Confidence: <strong>${r.confidence || '82%'}</strong></div>
-      </div>
-    `);
-  });
-}
+    this.warehousesData = [
+      { id: 'wh-alpha', name: 'Hub Alpha (Central Depot)', lat: 14.6095, lng: 120.9742, available: 12000 },
+      { id: 'wh-bravo', name: 'Hub Bravo (Northern Rift)', lat: 14.6395, lng: 120.9942, available: 4700 },
+      { id: 'wh-charlie', name: 'Hub Charlie (Coastal Base)', lat: 14.5795, lng: 121.0142, available: 9000 }
+    ];
 
-function renderBridgeMarkers(bridges) {
-  const data = (bridges && bridges.length > 0) ? bridges : getMockBridges();
-
-  data.forEach(b => {
-    const bridgeId = b.id || b.bridge_id || 'BRIDGE-B14';
-    const bridgeCoords = b.coords || b.coordinates || [27.7220, 85.3380];
-
-    const octagonIcon = L.divIcon({
-      className: 'custom-convoy-marker',
-      html: `<div class="bridge-octagon-icon" id="bridge-icon-${bridgeId}" title="${b.name || 'Unsafe Bridge'}">🛑</div>`,
-      iconSize: [32, 32],
-      iconAnchor: [16, 16]
-    });
-
-    const marker = L.marker(bridgeCoords, { icon: octagonIcon }).addTo(bridgeLayerGroup);
-    entityPatchRegistry.set(bridgeId, { marker, coords: bridgeCoords, data: b, type: 'bridge', status: b.status || 'impassable' });
-
-    marker.bindPopup(`
-      <div style="font-family:var(--font-sans); padding:4px;">
-        <div style="font-weight:700; font-size:14px; color:var(--slate-800);">${b.name || 'Bridge B-14 (Arterial Corridor)'}</div>
-        <div style="margin:4px 0;" id="popup-bridge-${bridgeId}-status">${renderStatusBadge(b.status || 'impassable', b.status_label || '🛑 STRUCTURALLY UNSAFE')}</div>
-        <div class="text-xs" style="color:var(--slate-600);">Source: <strong>${b.source || 'Control Room Inspection'}</strong></div>
-        <div class="text-xs" style="color:var(--slate-600);">Reported: <strong>${b.reported || '8 min ago'}</strong> | Confidence: <strong>${b.confidence || '98%'}</strong></div>
-      </div>
-    `);
-  });
-}
-
-function renderShelterMarkers(shelters) {
-  const data = (shelters && shelters.length > 0) ? shelters : getMockShelters();
-
-  data.forEach(s => {
-    const shelterId = s.id || s.shelter_id || 'SHELTER-06';
-    const shelterCoords = s.coords || s.coordinates || [27.7280, 85.3450];
-    const days = s.days !== undefined ? s.days : (s.days_remaining !== undefined ? s.days_remaining : 0.5);
-
-    const homeIcon = L.divIcon({
-      className: 'custom-convoy-marker',
-      html: `<div class="shelter-home-icon" id="shelter-icon-${shelterId}" title="${s.name}">🏠</div>`,
-      iconSize: [32, 32],
-      iconAnchor: [16, 16]
-    });
-
-    const marker = L.marker(shelterCoords, { icon: homeIcon }).addTo(shelterLayerGroup);
-    const itemData = { ...s, id: shelterId, days, coords: shelterCoords };
-    entityPatchRegistry.set(shelterId, { marker, coords: shelterCoords, data: itemData, type: 'shelter' });
-
-    marker.on('click', () => inspectShelter(itemData));
-  });
-}
-
-function renderConvoyMarkers(missions, vehicles = []) {
-  let convoysData = [];
-  if (missions && missions.length > 0) {
-    convoysData = missions.map(m => ({
-      id: m.convoy_id || m.id || 'CV-014',
-      cargo: m.cargo || 'Refrigerated Relief Supplies',
-      priority: m.priority_label || (m.priority === 1 ? 'CRITICAL' : 'HIGH'),
-      origin: m.origin || 'Regional Logistics Hub A',
-      destination: m.destination || 'Shelter 06',
-      route: m.route || 'Route B → Feeder C',
-      status: m.status || 'On Route',
-      reroute_reason: m.reroute_reason || 'Corridor telemetry nominal',
-      eta: m.eta || '1h 42m',
-      eta_delta: m.eta_delta || 'On Time',
-      coords: m.coords || m.coordinates || [27.7150, 85.3280],
-      heading: m.heading !== undefined ? m.heading : 45
-    }));
-  } else {
-    convoysData = getMockMissions();
+    this.customSelectedPoint = null;
   }
 
-  // Incorporate standalone vehicle telemetry if provided
-  if (vehicles && vehicles.length > 0) {
-    vehicles.forEach(v => {
-      const vId = v.id || v.convoy_id;
-      if (vId && !convoysData.some(c => c.id === vId)) {
-        convoysData.push({
-          id: vId,
-          cargo: v.cargo || 'General Medical Emergency Kit',
-          priority: v.priority || 'HIGH',
-          origin: v.origin || 'Fleet Logistics Hub',
-          destination: v.destination || 'Field Shelter',
-          route: v.route || 'Active Segment',
-          status: v.status || 'On Route',
-          reroute_reason: v.reroute_reason || 'Vehicle telemetry active',
-          eta: v.eta || '25m',
-          eta_delta: v.eta_delta || 'On Time',
-          coords: v.coords || v.coordinates || [27.7120, 85.3220],
-          heading: v.heading || 90
-        });
-      }
+  init() {
+    // Initialize Map
+    this.map = L.map('map', {
+      center: [14.605, 120.985],
+      zoom: 12,
+      zoomControl: false
+    });
+
+    L.control.zoom({ position: 'bottomright' }).addTo(this.map);
+
+    // CartoDB Positron Basemap (Clean Honeydew compatible tiles)
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; DISISTA CONTROL — Relief Intelligence',
+      maxZoom: 18
+    }).addTo(this.map);
+
+    // Add Layer Groups to Map
+    Object.values(this.layers).forEach(layer => layer.addTo(this.map));
+
+    // Render Initial Map Markers
+    this.renderAllLayers();
+
+    // Map Click Listener (Point Selection for Road Blocking)
+    this.map.on('click', (e) => this.handleMapPointClick(e));
+  }
+
+  renderAllLayers() {
+    this.renderWarehouses();
+    this.renderShelters();
+    this.renderHazards();
+    this.renderConvoys();
+  }
+
+  /* ------------------------------------------
+     MARKER RENDERERS & SVG CONFIDENCE RINGS
+     ------------------------------------------ */
+  renderHazards() {
+    this.layers.hazards.clearLayers();
+
+    this.hazardsData.forEach(h => {
+      // Create SVG Confidence Ring Marker
+      const strokeStyle = h.confirmed ? 'solid' : 'dashed';
+      const strokeColor = h.severity === 'impassable' ? '#3A4750' : '#5A7A68';
+      const iconShape = h.severity === 'impassable' ? '❖' : '▲';
+
+      const svgHtml = `
+        <div style="position: relative; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;">
+          <svg width="36" height="36" viewBox="0 0 36 36" style="position: absolute; top:0; left:0;">
+            <circle cx="18" cy="18" r="15" fill="none" stroke="${strokeColor}" stroke-width="3" stroke-dasharray="${strokeStyle === 'dashed' ? '4 3' : 'none'}" opacity="0.9"/>
+          </svg>
+          <div style="width: 22px; height: 22px; background: ${strokeColor}; color: #FFF; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold;">
+            ${iconShape}
+          </div>
+        </div>
+      `;
+
+      const customIcon = L.divIcon({
+        html: svgHtml,
+        className: 'hazard-custom-marker',
+        iconSize: [36, 36],
+        iconAnchor: [18, 18]
+      });
+
+      const marker = L.marker([h.lat, h.lng], { icon: customIcon });
+      marker.on('click', () => this.inspectEntity('hazard', h));
+      this.layers.hazards.addLayer(marker);
     });
   }
 
-  convoysData.forEach(c => {
-    addOrUpdateConvoyMarker(c);
-  });
-}
+  renderConvoys() {
+    this.layers.convoys.clearLayers();
+    this.layers.routes.clearLayers();
 
-function addOrUpdateConvoyMarker(c) {
-  const arrowIcon = L.divIcon({
-    className: 'custom-convoy-marker',
-    html: `<div class="convoy-arrow-icon" id="convoy-icon-${c.id}" style="transform: rotate(${c.heading || 0}deg);" title="Convoy ${c.id}">🧭</div>`,
-    iconSize: [32, 32],
-    iconAnchor: [16, 16]
-  });
+    this.convoysData.forEach(c => {
+      // Render Route Polyline
+      const routeColor = c.status === 'Stranded' ? '#3A4750' : (c.status === 'Rerouted' ? '#5A7A68' : '#8FAF8C');
+      const lineStyle = c.status === 'Rerouted' ? '6, 6' : 'none';
 
-  const marker = L.marker(c.coords, { icon: arrowIcon }).addTo(convoyLayerGroup);
-  entityPatchRegistry.set(c.id, { marker, coords: c.coords, data: c, type: 'convoy' });
+      const polyline = L.polyline(c.route, {
+        color: routeColor,
+        weight: 4,
+        dashArray: lineStyle,
+        opacity: 0.8
+      });
+      this.layers.routes.addLayer(polyline);
 
-  marker.on('click', () => inspectConvoy(c));
-}
+      // Render Convoy Marker Arrow
+      const arrowIcon = L.divIcon({
+        html: `<div style="background: ${routeColor}; color: #FFF; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; border: 1px solid #FFF; white-space: nowrap;">
+                 🚛 ${c.name} (${c.status})
+               </div>`,
+        className: 'convoy-marker',
+        iconSize: [100, 24],
+        iconAnchor: [50, 12]
+      });
 
-/* --------------------------------------------------------------------------
-   3. INCREMENTAL PATCH STREAM HANDLERS (ZERO MAP FLICKER)
-   -------------------------------------------------------------------------- */
+      const marker = L.marker([c.lat, c.lng], { icon: arrowIcon });
+      marker.on('click', () => this.inspectEntity('convoy', c));
+      this.layers.convoys.addLayer(marker);
+    });
+  }
 
-function patchConvoyObject(missionData) {
-  const convoyId = missionData.id || missionData.convoy_id || 'CV-014';
-  let reg = entityPatchRegistry.get(convoyId);
+  renderShelters() {
+    this.layers.shelters.clearLayers();
+    this.sheltersData.forEach(s => {
+      const color = s.urgency === 'critical' ? '#3A4750' : '#5A7A68';
+      const icon = L.divIcon({
+        html: `<div style="background: ${color}; color: #FFF; padding: 4px 6px; border-radius: 6px; font-size: 11px; font-weight: bold; border: 1px solid #FFF;">
+                 🏛️ ${s.name} ${s.isolated ? '⚠️ [ISOLATED]' : ''}
+               </div>`,
+        className: 'shelter-marker',
+        iconAnchor: [40, 12]
+      });
+      const marker = L.marker([s.lat, s.lng], { icon });
+      marker.on('click', () => this.inspectEntity('shelter', s));
+      this.layers.shelters.addLayer(marker);
+    });
+  }
 
-  if (!reg) {
-    // Dynamic entity creation if missing from initial load
-    const cData = {
-      id: convoyId,
-      cargo: missionData.cargo || 'Refrigerated Relief Supplies',
-      priority: missionData.priority_label || missionData.priority || 'HIGH',
-      origin: missionData.origin || 'Regional Logistics Hub',
-      destination: missionData.destination || 'Field Shelter',
-      route: missionData.route || 'Dynamic Corridor',
-      status: missionData.status || 'On Route',
-      reroute_reason: missionData.reroute_reason || 'Real-time telemetry stream attached',
-      eta: missionData.eta || '30m',
-      eta_delta: missionData.eta_delta || 'On Time',
-      coords: missionData.coords || missionData.coordinates || [27.7150, 85.3280],
-      heading: missionData.heading || 0
+  renderWarehouses() {
+    this.layers.warehouses.clearLayers();
+    this.warehousesData.forEach(w => {
+      const icon = L.divIcon({
+        html: `<div style="background: #4A6656; color: #FFF; padding: 4px 6px; border-radius: 6px; font-size: 11px; font-weight: bold; border: 1px solid #FFF;">
+                 📦 ${w.name}
+               </div>`,
+        className: 'wh-marker',
+        iconAnchor: [40, 12]
+      });
+      const marker = L.marker([w.lat, w.lng], { icon });
+      marker.on('click', () => this.inspectEntity('warehouse', w));
+      this.layers.warehouses.addLayer(marker);
+    });
+  }
+
+  /* ------------------------------------------
+     MAP POINT CLICK & ROAD BLOCKING LOGIC
+     ------------------------------------------ */
+  handleMapPointClick(e) {
+    this.customSelectedPoint = e.latlng;
+    const latStr = e.latlng.lat.toFixed(4);
+    const lngStr = e.latlng.lng.toFixed(4);
+
+    const popupHtml = `
+      <div style="font-size: 13px; font-family: var(--font-sans);">
+        <strong>Map Location Selected</strong><br>
+        <span class="text-meta">Lat: ${latStr}, Lng: ${lngStr}</span>
+        <hr style="margin: 6px 0; border: none; border-top: 1px solid #DDD;">
+        <button class="btn btn-destructive" style="min-height: 32px; padding: 0 8px; font-size: 11px;" onclick="liveMap.openRoadBlockModalWithPoint(${latStr}, ${lngStr})">
+          🛑 Block Road At This Point
+        </button>
+      </div>
+    `;
+
+    L.popup()
+      .setLatLng(e.latlng)
+      .setContent(popupHtml)
+      .openOn(this.map);
+  }
+
+  openRoadBlockModal() {
+    document.getElementById('road-block-modal').classList.remove('hidden');
+  }
+
+  openRoadBlockModalWithPoint(lat, lng) {
+    this.map.closePopup();
+    this.customSelectedPoint = { lat, lng };
+    document.getElementById('modal-road-select').value = 'custom-point';
+    document.getElementById('road-block-modal').classList.remove('hidden');
+  }
+
+  closeRoadBlockModal() {
+    document.getElementById('road-block-modal').classList.add('hidden');
+  }
+
+  handleRoadBlockSubmit(e) {
+    e.preventDefault();
+    const roadSelect = document.getElementById('modal-road-select').value;
+    const status = document.getElementById('modal-road-status').value;
+    const reason = document.getElementById('modal-road-reason').value.trim();
+
+    let lat = 14.625;
+    let lng = 120.980;
+    let locationName = 'Route 4 Segment';
+
+    if (roadSelect === 'custom-point' && this.customSelectedPoint) {
+      lat = this.customSelectedPoint.lat;
+      lng = this.customSelectedPoint.lng;
+      locationName = `Point (${lat.toFixed(3)}, ${lng.toFixed(3)})`;
+    } else if (roadSelect === 'bridge-b14') {
+      lat = 14.640; lng = 120.970; locationName = 'Bridge B14';
+    } else if (roadSelect === 'coastal-highway-8') {
+      lat = 14.570; lng = 120.980; locationName = 'Coastal Highway 8';
+    }
+
+    // Add new hazard entry
+    const newHazard = {
+      id: `haz-${Date.now()}`,
+      name: locationName,
+      lat: lat,
+      lng: lng,
+      type: 'Road Blocked / Closed',
+      severity: status,
+      confidence: 100,
+      confirmed: true,
+      notes: reason
     };
-    addOrUpdateConvoyMarker(cData);
-    toast.show(`Live Update: New Convoy ${convoyId} telemetry registered`, 'safe', 2500);
-    return;
-  }
 
-  // Merge patch telemetry into existing state object
-  Object.assign(reg.data, missionData);
+    this.hazardsData.push(newHazard);
 
-  // 1. Smoothly update Leaflet marker coordinates without tearing down or rebuilding layer
-  if (missionData.coords || missionData.coordinates) {
-    const newCoords = missionData.coords || missionData.coordinates;
-    reg.marker.setLatLng(newCoords);
-    reg.coords = newCoords;
-  }
-
-  // 2. Rotate directional arrow marker if heading updated
-  if (missionData.heading !== undefined) {
-    const iconElem = document.getElementById(`convoy-icon-${convoyId}`);
-    if (iconElem) {
-      iconElem.style.transform = `rotate(${missionData.heading}deg)`;
-    }
-  }
-
-  // 3. Update right inspection panel live if currently selected
-  if (currentlyInspectedEntityId === convoyId) {
-    inspectConvoy(reg.data, false); // false = do not re-trigger flyTo animation on incremental telemetry patch
-  }
-
-  toast.show(`Live Update: Convoy ${convoyId} telemetry patched (${reg.data.status})`, 'safe', 2500);
-}
-
-function patchVehicleObject(vehicleData) {
-  patchConvoyObject(vehicleData);
-}
-
-function patchBridgeObject(bridgeData) {
-  const bridgeId = bridgeData.id || bridgeData.bridge_id || 'BRIDGE-B14';
-  let reg = entityPatchRegistry.get(bridgeId);
-
-  if (!reg) {
-    renderBridgeMarkers([bridgeData]);
-    toast.show(`Live Update: Bridge ${bridgeId} telemetry registered`, 'warning', 2500);
-    return;
-  }
-
-  if (bridgeData.coords || bridgeData.coordinates) {
-    const newCoords = bridgeData.coords || bridgeData.coordinates;
-    reg.marker.setLatLng(newCoords);
-    reg.coords = newCoords;
-  }
-
-  if (bridgeData.status) {
-    reg.status = bridgeData.status;
-    if (reg.data) reg.data.status = bridgeData.status;
-    const statusContainer = document.getElementById(`popup-bridge-${bridgeId}-status`) || document.getElementById(`popup-bridge-B14-status`);
-    if (statusContainer) {
-      statusContainer.innerHTML = renderStatusBadge(bridgeData.status);
-    }
-  }
-
-  toast.show(`Live Update: Bridge ${bridgeId} status patched`, 'warning', 2500);
-}
-
-function patchShelterObject(shelterData) {
-  const shelterId = shelterData.id || shelterData.shelter_id || 'SHELTER-06';
-  let reg = entityPatchRegistry.get(shelterId);
-
-  if (!reg) {
-    renderShelterMarkers([shelterData]);
-    toast.show(`Live Update: Shelter ${shelterId} telemetry registered`, 'safe', 2500);
-    return;
-  }
-
-  Object.assign(reg.data, shelterData);
-  if (shelterData.days_remaining !== undefined) {
-    reg.data.days = shelterData.days_remaining;
-  }
-
-  if (shelterData.coords || shelterData.coordinates) {
-    const newCoords = shelterData.coords || shelterData.coordinates;
-    reg.marker.setLatLng(newCoords);
-    reg.coords = newCoords;
-  }
-
-  if (currentlyInspectedEntityId === shelterId) {
-    inspectShelter(reg.data, false);
-  }
-
-  toast.show(`Live Update: Shelter ${shelterId} supply telemetry updated`, 'safe', 2500);
-}
-
-function patchRoadObject(roadData) {
-  const roadId = roadData.id || roadData.road_id || 'ROAD-C';
-  let reg = entityPatchRegistry.get(roadId);
-
-  if (!reg) {
-    renderDebrisCorridors([roadData]);
-    toast.show(`Live Update: Road segment ${roadId} registered`, 'warning', 2500);
-    return;
-  }
-
-  if (roadData.status && reg.layer) {
-    reg.layer.setStyle({
-      color: (roadData.status === 'blocked' || roadData.status === 'impassable') ? '#8B0000' : '#3A4750'
-    });
-    if (reg.data) reg.data.status = roadData.status;
-    const statusElem = document.getElementById(`popup-road-${roadId}-status`);
-    if (statusElem) {
-      statusElem.innerHTML = renderStatusBadge(roadData.status);
-    }
-  }
-
-  if ((roadData.coordinates || roadData.polyline) && reg.layer) {
-    reg.layer.setLatLngs(roadData.coordinates || roadData.polyline);
-  }
-
-  toast.show(`Live Update: Road corridor ${roadId} status patched`, 'warning', 2500);
-}
-
-/* --------------------------------------------------------------------------
-   4. RIGHT PANEL INSPECTION ENGINES
-   -------------------------------------------------------------------------- */
-function inspectConvoy(c, animateMap = true) {
-  currentlyInspectedEntityId = c.id;
-  const panel = document.getElementById('selected-entity-panel');
-  if (!panel) return;
-
-  panel.innerHTML = `
-    <div style="display:flex; flex-direction:column; gap:var(--space-md);">
-      <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-        <div>
-          <span class="priority-badge ${c.priority === 'CRITICAL' ? 'priority-badge--critical' : 'priority-badge--high'}">${c.priority} PRIORITY</span>
-          <h2 style="font-size:var(--font-size-xl); margin-top:4px; color:var(--slate-800);">Convoy ${c.id}</h2>
-        </div>
-        ${renderStatusBadge(c.status)}
-      </div>
-
-      <div class="card" style="padding:var(--space-sm) var(--space-md); background:var(--bg-honeydew-light);">
-        <div class="text-xs font-bold uppercase" style="color:var(--slate-600);">Cargo Inventory</div>
-        <div class="font-semibold text-sm" style="color:var(--slate-900);">${c.cargo}</div>
-      </div>
-
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-sm);" class="text-xs">
-        <div>
-          <div class="font-bold uppercase" style="color:var(--slate-600);">Origin Hub</div>
-          <div>${c.origin}</div>
-        </div>
-        <div>
-          <div class="font-bold uppercase" style="color:var(--slate-600);">Target Destination</div>
-          <div>${c.destination}</div>
-        </div>
-      </div>
-
-      <div class="card card--warning" style="padding:var(--space-sm) var(--space-md);">
-        <div class="text-xs font-bold uppercase" style="color:var(--slate-800);">Why Recalculated</div>
-        <div class="text-xs" style="color:var(--slate-900); margin-top:2px;">${c.reroute_reason}</div>
-      </div>
-
-      <div style="display:flex; justify-content:space-between; align-items:center;" class="card">
-        <div>
-          <div class="text-xs font-bold uppercase" style="color:var(--slate-600);">Current ETA</div>
-          <div style="font-size:20px; font-weight:700; color:var(--slate-900);">${c.eta}</div>
-        </div>
-        <div style="text-align:right;">
-          <div class="text-xs font-bold uppercase" style="color:var(--slate-600);">ETA Delay</div>
-          <div style="font-size:16px; font-weight:700; color:var(--forest-800);">${c.eta_delta}</div>
-        </div>
-      </div>
-
-      <a href="convoy-dispatch.html" class="button button--primary" style="width:100%;">🚛 Open Dispatch Workflow</a>
-    </div>
-  `;
-
-  if (animateMap && map) {
-    map.flyTo(c.coords, 15, { animate: true, duration: 1.0 });
-  }
-}
-
-function inspectShelter(s, animateMap = true) {
-  currentlyInspectedEntityId = s.id;
-  const panel = document.getElementById('selected-entity-panel');
-  if (!panel) return;
-
-  panel.innerHTML = `
-    <div style="display:flex; flex-direction:column; gap:var(--space-md);">
-      <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-        <div>
-          <span class="priority-badge priority-badge--high">RELIEF SHELTER</span>
-          <h2 style="font-size:var(--font-size-lg); margin-top:4px;">${s.name}</h2>
-        </div>
-        ${renderStatusBadge(s.status, s.days < 1 ? 'ISOLATED' : 'DEGRADED')}
-      </div>
-
-      <div class="card card--critical" style="padding:var(--space-sm) var(--space-md);">
-        <div class="text-xs font-bold uppercase" style="color:var(--slate-600);">Days of Medical Supply</div>
-        <div style="font-size:28px; font-weight:700; color:var(--slate-900);">${s.days} Days</div>
-        <div class="text-xs" style="color:var(--slate-900);">Population: ${s.population || 450} evacuees</div>
-      </div>
-
-      <a href="shelter-board.html" class="button button--secondary" style="width:100%;">🏠 Open Shelter Board</a>
-    </div>
-  `;
-
-  if (animateMap && map) {
-    map.flyTo(s.coords, 15, { animate: true, duration: 1.0 });
-  }
-}
-
-/* --------------------------------------------------------------------------
-   5. INTERACTIVE SEARCH & LAYER CONTROLS
-   -------------------------------------------------------------------------- */
-function selectEntityById(idQuery) {
-  const key = idQuery.toUpperCase();
-  for (const [id, reg] of entityPatchRegistry.entries()) {
-    if (id.includes(key) || (reg.data && reg.data.name && reg.data.name.toUpperCase().includes(key))) {
-      if (reg.data && reg.data.cargo) {
-        inspectConvoy(reg.data);
-      } else if (reg.data && reg.data.days !== undefined) {
-        inspectShelter(reg.data);
-      } else {
-        map.flyTo(reg.coords, 15);
-        reg.marker.openPopup();
+    // Update convoy status & reroute
+    this.convoysData.forEach(c => {
+      if (c.status === 'On Route') {
+        c.status = 'Rerouted';
       }
-      break;
+    });
+
+    // Re-render map layers
+    this.renderAllLayers();
+    this.closeRoadBlockModal();
+
+    // Broadcast Critical Alert Banner & Toast
+    const alertMsg = `ROAD BLOCKED: ${locationName} marked ${status.toUpperCase()} (${reason}). Active convoys rerouted live!`;
+    toast.showBanner(alertMsg);
+    toast.success(`Road block registered and system rerouting calculated.`);
+
+    // Refresh Inspector
+    this.inspectEntity('hazard', newHazard);
+  }
+
+  /* ------------------------------------------
+     HAZARD VERIFICATION ENGINE (Control Room)
+     ------------------------------------------ */
+  verifyHazard(hazardId) {
+    if (!auth.canPerform('verify_hazard')) {
+      toast.error('Verify hazard is restricted to Control Room Officers only.');
+      return;
+    }
+
+    const hazard = this.hazardsData.find(h => h.id === hazardId);
+    if (hazard) {
+      hazard.confirmed = true;
+      hazard.confidence = 100;
+      this.renderHazards();
+      toast.success(`Hazard "${hazard.name}" verified! Confidence promoted to 100%. Route graph updated.`);
+      this.inspectEntity('hazard', hazard);
+    }
+  }
+
+  /* ------------------------------------------
+     INSPECTOR PANEL CONTROLLER
+     ------------------------------------------ */
+  inspectEntity(type, entity) {
+    const titleEl = document.getElementById('inspector-title');
+    const subEl = document.getElementById('inspector-subtitle');
+    const contentEl = document.getElementById('inspector-content');
+
+    titleEl.innerText = `${type.toUpperCase()} INSPECTOR`;
+    subEl.innerText = entity.name || entity.id;
+
+    if (type === 'hazard') {
+      const badge = window.statusBadge.render(entity.severity, { confirmed: entity.confirmed, label: entity.severity.toUpperCase() });
+      const canVerify = auth.canPerform('verify_hazard') && !entity.confirmed;
+
+      contentEl.innerHTML = `
+        <div style="margin-bottom: var(--space-3);">
+          ${badge}
+        </div>
+        <h3 style="font-size: var(--text-base); margin-bottom: 4px;">${entity.name}</h3>
+        <p class="text-meta" style="margin-bottom: var(--space-3);">Type: <strong>${entity.type}</strong></p>
+
+        <div style="background: var(--bg-honeydew); padding: var(--space-3); border-radius: var(--radius); border: 1px solid var(--border-hairline); margin-bottom: var(--space-4); font-size: var(--text-sm);">
+          <div><strong>Confidence Score:</strong> ${entity.confidence}%</div>
+          <div><strong>Verification:</strong> ${entity.confirmed ? 'Confirmed (Solid Ring)' : 'Unconfirmed Report (Dashed Ring)'}</div>
+          <div style="margin-top: 6px; font-size: var(--text-xs); color: var(--slate-500);">${entity.notes}</div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: var(--space-2);">
+          ${canVerify ? `
+            <button class="btn btn-primary" onclick="liveMap.verifyHazard('${entity.id}')">
+              ✓ VERIFY REPORT & PROMOTE STATUS
+            </button>
+          ` : ''}
+          <button class="btn btn-destructive" onclick="liveMap.openRoadBlockModal()">
+            🛑 BLOCK ADJACENT ROAD SEGMENT
+          </button>
+        </div>
+      `;
+    } else if (type === 'convoy') {
+      const badge = window.statusBadge.render(entity.status === 'Stranded' ? 'impassable' : (entity.status === 'Rerouted' ? 'degraded' : 'normal'), { label: entity.status });
+
+      contentEl.innerHTML = `
+        <div style="margin-bottom: var(--space-3);">${badge}</div>
+        <h3 style="font-size: var(--text-base); margin-bottom: 4px;">${entity.name}</h3>
+        <p class="text-meta" style="margin-bottom: var(--space-3);">Cargo: <strong>${entity.cargo}</strong></p>
+
+        <div style="background: var(--bg-honeydew); padding: var(--space-3); border-radius: var(--radius); border: 1px solid var(--border-hairline); margin-bottom: var(--space-4); font-size: var(--text-sm);">
+          <div><strong>Origin:</strong> ${entity.origin}</div>
+          <div><strong>Destination:</strong> ${entity.dest}</div>
+          <div><strong>Priority Tier:</strong> ${entity.priority}</div>
+        </div>
+
+        <button class="btn btn-secondary" style="width: 100%;" onclick="window.location.href='convoy-dispatch.html'">
+          View Convoy Dispatch Board →
+        </button>
+      `;
+    } else if (type === 'shelter') {
+      const badge = window.statusBadge.render(entity.urgency === 'critical' ? 'impassable' : 'degraded', { label: `${entity.daysSupply} Days Cover` });
+
+      contentEl.innerHTML = `
+        <div style="margin-bottom: var(--space-3);">${badge}</div>
+        <h3 style="font-size: var(--text-base); margin-bottom: 4px;">${entity.name}</h3>
+        <p class="text-meta" style="margin-bottom: var(--space-3);">Population: <strong>${entity.pop} occupants</strong></p>
+
+        ${entity.isolated ? `
+          <div style="background: var(--slate-800); color: var(--white); padding: var(--space-3); border-radius: var(--radius); margin-bottom: var(--space-4); font-size: var(--text-xs);">
+            <strong>⚠️ ISOLATED SHELTER WARNING:</strong> No road path reachable from any active warehouse depot! Automated alert active.
+          </div>
+        ` : ''}
+
+        <button class="btn btn-secondary" style="width: 100%;" onclick="window.location.href='shelter-board.html'">
+          Open Shelter Regional Board →
+        </button>
+      `;
+    }
+  }
+
+  toggleLayer(layerName, visible) {
+    if (this.layers[layerName]) {
+      if (visible) {
+        this.map.addLayer(this.layers[layerName]);
+      } else {
+        this.map.removeLayer(this.layers[layerName]);
+      }
+    }
+  }
+
+  resetView() {
+    if (this.map) {
+      this.map.setView([14.605, 120.985], 12);
     }
   }
 }
 
-function bindLayerControls() {
-  document.getElementById('layer-floods')?.addEventListener('change', (e) => {
-    e.target.checked ? map.addLayer(floodLayerGroup) : map.removeLayer(floodLayerGroup);
-  });
-  document.getElementById('layer-debris')?.addEventListener('change', (e) => {
-    e.target.checked ? map.addLayer(debrisLayerGroup) : map.removeLayer(debrisLayerGroup);
-  });
-  document.getElementById('layer-bridges')?.addEventListener('change', (e) => {
-    e.target.checked ? map.addLayer(bridgeLayerGroup) : map.removeLayer(bridgeLayerGroup);
-  });
-  document.getElementById('layer-convoys')?.addEventListener('change', (e) => {
-    e.target.checked ? map.addLayer(convoyLayerGroup) : map.removeLayer(convoyLayerGroup);
-  });
-  document.getElementById('layer-shelters')?.addEventListener('change', (e) => {
-    e.target.checked ? map.addLayer(shelterLayerGroup) : map.removeLayer(shelterLayerGroup);
-  });
-}
-
-function getMockRoads() {
-  return [{
-    id: 'ROAD-C',
-    name: 'Feeder Road C — Hillside Debris Slide',
-    status: 'degraded',
-    coordinates: [
-      [27.7100, 85.3100],
-      [27.7150, 85.3200],
-      [27.7180, 85.3250]
-    ],
-    source: 'Field Driver Incident Report',
-    reported: '14 min ago',
-    confidence: '82%'
-  }];
-}
-
-function getMockBridges() {
-  return [{
-    id: 'BRIDGE-B14',
-    name: 'Bridge B-14 (Arterial Corridor)',
-    status: 'impassable',
-    coords: [27.7220, 85.3380],
-    source: 'Control Room Inspection',
-    reported: '8 min ago',
-    confidence: '98%'
-  }];
-}
-
-function getMockShelters() {
-  return [
-    { id: 'SHELTER-06', name: 'Shelter 06 (Community Center)', coords: [27.7280, 85.3450], days: 0.5, status: 'blocked', population: 450 },
-    { id: 'SHELTER-02', name: 'Shelter 02 (Gymnasium)', coords: [27.7050, 85.3150], days: 2.1, status: 'caution', population: 820 }
-  ];
-}
-
-function getMockMissions() {
-  return [
-    {
-      id: 'CV-014',
-      cargo: 'Refrigerated Insulin & Blood Bags',
-      priority: 'CRITICAL',
-      origin: 'Regional Logistics Hub A',
-      destination: 'Shelter 06 (Sector 4)',
-      route: 'Route B → Feeder C (Rerouted)',
-      status: 'Rerouted',
-      reroute_reason: 'Bridge B-14 marked hazardous due to 1.4m flood submersion.',
-      eta: '1h 42m',
-      eta_delta: '+38 min',
-      coords: [27.7150, 85.3280],
-      heading: 45
-    },
-    {
-      id: 'CV-009',
-      cargo: 'Infant Nutrition & Formula',
-      priority: 'HIGH',
-      origin: 'Logistics Hub B',
-      destination: 'Shelter 02 (Sector 1)',
-      route: 'Highway 1 Direct',
-      status: 'On Route',
-      reroute_reason: 'None. Optimal clear corridor.',
-      eta: '45m',
-      eta_delta: 'On Time',
-      coords: [27.7080, 85.3180],
-      heading: 120
-    }
-  ];
-}
-
-function getMockVehicles() {
-  return [];
-}
+document.addEventListener('DOMContentLoaded', () => {
+  window.liveMap = new LiveMapManager();
+  window.liveMap.init();
+});

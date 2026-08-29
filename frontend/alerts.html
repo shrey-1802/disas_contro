@@ -3,68 +3,59 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Emergency alert inbox and command action center for disaster response operators.">
-  <title>Alerts & Command Center — Relief Supply Chain Platform</title>
+  <title>DISISTA CONTROL — Alerts Inbox & Escalations</title>
+  <meta name="description" content="Operational Critical Alerts & Escalation Inbox">
 
-  <!-- Typography -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-  <!-- CSS Architecture -->
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/components.css">
 </head>
 <body>
-  <div class="app-shell">
-    <header class="app-header" id="app-header"></header>
 
-    <div class="app-body">
-      <nav class="app-nav" id="app-nav" aria-label="Operational Navigation"></nav>
+  <main class="page-main">
+    <div class="container" style="margin-top: var(--space-5);">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-5);">
+        <div>
+          <span class="panel-label">COMMAND CENTER ALERTS</span>
+          <h2>Alerts Inbox & Escalations</h2>
+        </div>
+        <span class="badge badge-blocked">1 Critical Active</span>
+      </div>
 
-      <main class="app-main" id="main-content">
-        <header style="display:flex; justify-content:space-between; align-items:center;">
-          <div>
-            <h1>Alerts & Command Center</h1>
-            <p class="text-sm" style="color:var(--slate-600);">Operational alert inbox, severity escalations, and command room acknowledgment actions.</p>
-          </div>
-          <div>
-            <button class="button button--secondary" id="btn-clear-ack">Clear Acknowledged</button>
-          </div>
-        </header>
-
-        <!-- Filter Bar -->
-        <div class="filter-bar" style="flex-wrap: wrap;">
-          <div class="flex items-center gap-sm">
-            <span class="text-xs font-bold uppercase">Severity Tier:</span>
-            <select style="width:auto;" id="filter-severity">
-              <option value="all">All Severities</option>
-              <option value="critical">Critical Only</option>
-              <option value="warning">Warning Only</option>
-              <option value="advisory">Advisory Only</option>
-            </select>
-          </div>
-
-          <div class="flex items-center gap-sm">
-            <span class="text-xs font-bold uppercase">Acknowledgment State:</span>
-            <select style="width:auto;" id="filter-state">
-              <option value="all">All States</option>
-              <option value="pending">Pending / Unacknowledged</option>
-              <option value="acknowledged">Acknowledged Only</option>
-              <option value="escalated">Escalated Only</option>
-            </select>
-          </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">System-Wide Critical Alerts Feed</span>
+          <button class="btn btn-secondary" onclick="ackAll()">Acknowledge All</button>
         </div>
 
-        <!-- Alerts Inbox Container -->
-        <div style="display:flex; flex-direction:column; gap:var(--space-md);" id="alerts-container">
-          <!-- Loaded dynamically via alerts.js -->
+        <div id="alerts-list" style="display: flex; flex-direction: column; gap: var(--space-3);">
+          <div class="card critical" style="background: var(--bg-honeydew);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div>
+                <span class="badge badge-blocked" style="margin-bottom: 6px;">❖ CRITICAL ALERT</span>
+                <h4>Isolated Shelter Detected — Shelter 19 (Island Reach)</h4>
+                <p style="font-size: var(--text-sm); color: var(--slate-500); margin-top: 4px;">
+                  Shelter 19 has 0.5 days supply remaining with NO viable road path from any warehouse depot due to Bridge B14 closure.
+                </p>
+              </div>
+              <button class="btn btn-primary" style="min-height: 34px; font-size: 11px;" onclick="toast.acknowledgeBanner()">Acknowledge Alert</button>
+            </div>
+          </div>
         </div>
-      </main>
+      </div>
     </div>
-  </div>
+  </main>
 
-  <script type="module" src="js/pages/alerts.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/statusBadge.js"></script>
+  <script src="js/toast.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/navbar.js"></script>
+
+  <script>
+    function ackAll() {
+      toast.success('All operational alerts acknowledged.');
+    }
+  </script>
 </body>
 </html>

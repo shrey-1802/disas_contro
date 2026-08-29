@@ -1,405 +1,352 @@
-import { renderGlobalShell } from '../navbar.js';
-import { Store } from '../store.js';
-import { socketService } from '../socket.js';
-import { renderStatusBadge } from '../statusBadge.js';
-import { toast } from '../toast.js';
+/* ==========================================
+   DISISTA CONTROL — CONVOY DISPATCH MANAGER
+   Risk Index Matrix, Path Diffs, & Fleet Control
+   ========================================== */
 
-// Mandatory static cargo priority lookup table as required by specifications
-const CARGO_PRIORITY = {
-  insulin: 1,
-  blood: 1,
-  infant_nutrition: 2,
-  water: 3,
-  general: 4
-};
-
-let missionsList = [];
-let selectedConvoyIds = new Set();
-
-document.addEventListener('DOMContentLoaded', async () => {
-  renderGlobalShell('convoy-dispatch.html');
-
-  // Load telemetry data from Store
-  missionsList = Store.getMissions();
-  renderConvoyTable();
-
-  // Highlight specific convoy if passed via query parameter (e.g. ?convoy=CV-014)
-  const urlParams = new URLSearchParams(window.location.search);
-  const targetConvoyId = urlParams.get('convoy');
-  if (targetConvoyId) {
-    setTimeout(() => {
-      const row = document.getElementById(`row-${targetConvoyId}`);
-      if (row) {
-        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        row.style.outline = '3px solid var(--forest-600)';
-        row.style.backgroundColor = 'var(--sage-100)';
+class ConvoyDispatchManager {
+  constructor() {
+    this.convoys = [
+      {
+        id: 'convoy-14',
+        name: 'Convoy 14',
+        cargo: 'Insulin & Blood Products',
+        priority: 'Insulin/Blood',
+        origin: 'Hub Alpha',
+        dest: 'Shelter 12',
+        status: 'On Route',
+        driver: 'Unit-4 (Driver Mark)',
+        ackStatus: 'Acknowledged',
+        eta: '14:20 UTC',
+        riskLevel: 'medium',
+        oldPath: null,
+        newPath: 'Route 4 Direct',
+        rationale: 'Nominal route active. Safe clearance verified.'
+      },
+      {
+        id: 'convoy-22',
+        name: 'Convoy 22',
+        cargo: 'Infant Nutrition & Water',
+        priority: 'Infant Nutrition',
+        origin: 'Hub Bravo',
+        dest: 'Shelter 04',
+        status: 'Rerouted',
+        driver: 'Unit-9 (Driver Elena)',
+        ackStatus: 'Acknowledged',
+        eta: '16:05 UTC',
+        riskLevel: 'low',
+        oldPath: 'Route 4 Corridor → Bridge B14',
+        newPath: 'Bypass 2 via Rift Highway → Shelter 04',
+        rationale: 'Bridge B14 submerged -> Rerouted via Bypass 2 (+14m)'
+      },
+      {
+        id: 'convoy-09',
+        name: 'Convoy 09',
+        cargo: 'General Relief Supplies',
+        priority: 'General',
+        origin: 'Hub Charlie',
+        dest: 'Shelter 19',
+        status: 'Stranded',
+        driver: 'Unit-2 (Driver David)',
+        ackStatus: 'Ack Pending',
+        eta: 'Delayed (Blocked)',
+        riskLevel: 'high',
+        oldPath: 'Coastal Highway 8',
+        newPath: 'Pending Safe Corridor Assignment',
+        rationale: 'Bridge B14 Impassable & Route 4 Flash Flood. Relay handoff required at Sector 8.',
+        relayPoint: 'Sector 8 Relay Depot (Vehicle Transfer Required)'
       }
-    }, 200);
+    ];
+
+    this.selectedIds = new Set();
+    this.expandedDiffs = new Set(['convoy-22']); // Open by default for demo
   }
 
-  // Event Listeners for Filters
-  document.getElementById('filter-cargo-priority')?.addEventListener('change', renderConvoyTable);
-  document.getElementById('filter-status')?.addEventListener('change', renderConvoyTable);
-
-  // Bulk Selection Handlers
-  document.getElementById('select-all-convoys')?.addEventListener('change', handleSelectAll);
-  document.getElementById('btn-bulk-dispatch')?.addEventListener('click', openBulkConfirmModal);
-  document.getElementById('btn-cancel-bulk')?.addEventListener('click', closeBulkModal);
-  document.getElementById('btn-close-bulk-modal')?.addEventListener('click', closeBulkModal);
-  document.getElementById('btn-commit-bulk')?.addEventListener('click', executeBulkDispatch);
-
-  // New Mission Modal Handlers
-  document.getElementById('btn-new-dispatch')?.addEventListener('click', openNewDispatchModal);
-  document.getElementById('btn-close-modal')?.addEventListener('click', closeNewDispatchModal);
-  document.getElementById('btn-cancel-dispatch')?.addEventListener('click', closeNewDispatchModal);
-  document.getElementById('form-new-dispatch')?.addEventListener('submit', handleNewDispatchSubmit);
-
-  // Reactive store update listeners
-  window.addEventListener('store-updated', () => {
-    missionsList = Store.getMissions();
-    renderConvoyTable();
-  });
-});
-
-
-/* --------------------------------------------------------------------------
-   1. CARGO PRIORITY CALCULATOR
-   -------------------------------------------------------------------------- */
-function deriveCargoPriority(cargoText) {
-  if (!cargoText) return 4;
-  const lower = cargoText.toLowerCase();
-
-  if (lower.includes('insulin') || lower.includes('blood')) {
-    return CARGO_PRIORITY.insulin;
-  }
-  if (lower.includes('infant') || lower.includes('nutrition') || lower.includes('formula')) {
-    return CARGO_PRIORITY.infant_nutrition;
-  }
-  if (lower.includes('water')) {
-    return CARGO_PRIORITY.water;
-  }
-  return CARGO_PRIORITY.general;
-}
-
-function getPriorityBadgeHTML(priorityTier) {
-  switch (priorityTier) {
-    case 1:
-      return `<span class="priority-badge priority-badge--critical">CRITICAL (TIER 1)</span>`;
-    case 2:
-      return `<span class="priority-badge priority-badge--high">HIGH (TIER 2)</span>`;
-    case 3:
-      return `<span class="priority-badge priority-badge--medium">MEDIUM (TIER 3)</span>`;
-    default:
-      return `<span class="priority-badge priority-badge--low">LOW (TIER 4)</span>`;
-  }
-}
-
-/* --------------------------------------------------------------------------
-   2. TABLE RENDER ENGINE & REROUTED VISUALIZATION
-   -------------------------------------------------------------------------- */
-function renderConvoyTable() {
-  const tbody = document.getElementById('convoy-table-body');
-  if (!tbody) return;
-
-  const priorityFilter = document.getElementById('filter-cargo-priority')?.value || 'all';
-  const statusFilter = document.getElementById('filter-status')?.value || 'all';
-
-  // Process & Sort Missions by derived cargo priority
-  let filtered = missionsList.map(m => {
-    const calculatedPriority = deriveCargoPriority(m.cargo);
-    return { ...m, derivedPriority: calculatedPriority };
-  });
-
-  // Apply Priority Filter
-  if (priorityFilter !== 'all') {
-    const tierMap = { critical: 1, high: 2, medium: 3, low: 4 };
-    const targetTier = tierMap[priorityFilter];
-    if (targetTier) {
-      filtered = filtered.filter(m => m.derivedPriority === targetTier);
-    }
+  init() {
+    this.applyRoleScope();
+    this.render();
   }
 
-  // Apply Status Filter
-  if (statusFilter !== 'all') {
-    filtered = filtered.filter(m => m.status === statusFilter);
-  }
-
-  // Sort: Tier 1 (Critical) top
-  filtered.sort((a, b) => a.derivedPriority - b.derivedPriority);
-
-  if (filtered.length === 0) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="9" style="text-align:center; padding:var(--space-lg); color:var(--slate-600);">
-          No active relief convoys match the selected filter criteria.
-        </td>
-      </tr>
-    `;
-    updateBulkActionBar();
-    return;
-  }
-
-  tbody.innerHTML = filtered.map(m => {
-    const id = m.convoy_id || m.id;
-    const isChecked = selectedConvoyIds.has(id);
-    const isRerouted = m.status === 'Rerouted';
-
-    // Rerouted route visualization: OLD (slate, struck-through) -> NEW (forest, active)
-    let routeHTML = '';
-    if (isRerouted) {
-      const oldRoute = m.old_route || 'Route B (Submerged)';
-      const newRoute = m.route || 'Feeder Road C';
-      const reason = m.reroute_reason || 'Bridge B-14 Structurally Unsafe';
-      const delay = m.eta_delta || '+38 min delay';
-
-      routeHTML = `
-        <div class="reroute-visualization">
-          <div class="old-route">OLD: ${oldRoute}</div>
-          <div class="new-route">NEW: ${newRoute}</div>
-          <span class="reroute-reason">Reason: ${reason} (${delay})</span>
-        </div>
-      `;
+  applyRoleScope() {
+    const user = auth.getCurrentUser();
+    const scopeBadge = document.getElementById('role-scope-badge');
+    if (user && user.role === 'warehouse_manager') {
+      scopeBadge.innerText = 'Scoped to Hub Alpha Missions';
+      scopeBadge.className = 'badge badge-caution';
     } else {
-      routeHTML = `
-        <div style="font-size:var(--font-size-xs); color:var(--slate-800); font-weight:600;">
-          ${m.route || 'Highway 1 Direct'}
-        </div>
-        <div class="text-xs" style="color:var(--slate-600);">ETA: ${m.eta || 'Nominal'}</div>
+      scopeBadge.innerText = 'Full Network View';
+      scopeBadge.className = 'badge badge-safe';
+    }
+  }
+
+  getFilteredConvoys() {
+    const user = auth.getCurrentUser();
+    let list = [...this.convoys];
+
+    // Role Scoping: Warehouse Manager sees only Hub Alpha
+    if (user && user.role === 'warehouse_manager') {
+      list = list.filter(c => c.origin === 'Hub Alpha');
+    }
+
+    // Filter by Cargo Priority
+    const cargoFilter = document.getElementById('filter-cargo').value;
+    if (cargoFilter !== 'ALL') {
+      list = list.filter(c => c.priority === cargoFilter);
+    }
+
+    // Filter by Status
+    const statusFilter = document.getElementById('filter-status').value;
+    if (statusFilter !== 'ALL') {
+      list = list.filter(c => c.status === statusFilter);
+    }
+
+    // Sort
+    const sortBy = document.getElementById('sort-by').value;
+    list.sort((a, b) => {
+      if (sortBy === 'risk') {
+        const rank = { high: 3, medium: 2, low: 1 };
+        return rank[b.riskLevel] - rank[a.riskLevel];
+      } else if (sortBy === 'priority') {
+        const priorityRank = { 'Insulin/Blood': 4, 'Infant Nutrition': 3, 'Clean Water': 2, 'General': 1 };
+        return (priorityRank[b.priority] || 0) - (priorityRank[a.priority] || 0);
+      }
+      return 0;
+    });
+
+    return list;
+  }
+
+  render() {
+    const convoys = this.getFilteredConvoys();
+    const tbody = document.getElementById('convoy-table-body');
+    tbody.innerHTML = '';
+
+    // Update Metrics
+    document.getElementById('metric-total').innerText = convoys.length;
+    document.getElementById('metric-on-route').innerText = convoys.filter(c => c.status === 'On Route').length;
+    document.getElementById('metric-rerouted').innerText = convoys.filter(c => c.status === 'Rerouted').length;
+    document.getElementById('metric-stranded').innerText = convoys.filter(c => c.status === 'Stranded').length;
+
+    if (convoys.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="8" style="text-align: center; padding: 32px; color: var(--slate-500);">
+            No convoys matching active filters.
+          </td>
+        </tr>
       `;
+      return;
     }
 
-    return `
-      <tr id="row-${id}">
+    convoys.forEach(c => {
+      const isSelected = this.selectedIds.has(c.id);
+      const isExpanded = this.expandedDiffs.has(c.id);
+      const statusBadgeHtml = window.statusBadge.render(
+        c.status === 'Stranded' ? 'impassable' : (c.status === 'Rerouted' ? 'degraded' : 'normal'),
+        { label: c.status }
+      );
 
-        <td style="text-align:center;">
-          <input type="checkbox" class="convoy-checkbox" data-id="${id}" ${isChecked ? 'checked' : ''}>
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="text-align: center;">
+          <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="convoyDispatch.toggleSelect('${c.id}', this.checked)">
         </td>
-        <td class="font-semibold text-mono">${id}</td>
-        <td>${m.cargo || 'Relief Supplies'}</td>
-        <td>${getPriorityBadgeHTML(m.derivedPriority)}</td>
-        <td class="text-sm">${m.origin || 'Logistics Hub'}</td>
-        <td class="text-sm">${m.destination || 'Field Shelter'}</td>
         <td>
-          <div style="margin-bottom:4px;">${renderStatusBadge(m.status)}</div>
-          ${routeHTML}
+          <div style="font-weight: 700;">${c.name}</div>
+          <span class="badge ${c.priority === 'Insulin/Blood' ? 'badge-blocked' : 'badge-caution'}" style="font-size: 10px; padding: 1px 6px;">
+            ${c.priority}
+          </span>
         </td>
-        <td class="text-sm">${m.driver || 'Radio Fleet Command'}</td>
         <td>
-          <a href="live-map.html?convoy=${id}" class="button button--secondary text-xs">🗺️ Trace on Map</a>
+          <div style="font-size: var(--text-sm); font-weight: 500;">${c.origin} → ${c.dest}</div>
+          <div class="text-meta">${c.cargo}</div>
         </td>
-      </tr>
-    `;
-  }).join('');
+        <td>
+          <div class="risk-index-bar">
+            <div class="risk-track">
+              <div class="risk-fill ${c.riskLevel}"></div>
+            </div>
+            <span style="font-size: var(--text-xs); font-weight: 600; text-transform: uppercase; color: var(--slate-800);">
+              ${c.riskLevel}
+            </span>
+          </div>
+        </td>
+        <td>${statusBadgeHtml}</td>
+        <td>
+          <div style="font-size: var(--text-xs); font-weight: 600;">${c.driver}</div>
+          <span class="text-meta" style="color: ${c.ackStatus === 'Acknowledged' ? 'var(--forest-700)' : 'var(--slate-800)'}">
+            ${c.ackStatus === 'Acknowledged' ? '✓ Acked' : '⌛ Ack Pending'}
+          </span>
+        </td>
+        <td style="font-weight: 600; font-variant-numeric: tabular-nums;">${c.eta}</td>
+        <td style="text-align: right;">
+          <div style="display: flex; gap: 4px; justify-content: flex-end;">
+            ${c.oldPath ? `
+              <button class="btn btn-toggle" onclick="convoyDispatch.toggleDiff('${c.id}')" style="font-size: 11px;">
+                ${isExpanded ? 'Hide Path Diff' : 'View Path Diff'}
+              </button>
+            ` : ''}
+            <button class="btn btn-secondary" style="min-height: 32px; padding: 0 8px; font-size: 11px;" onclick="convoyDispatch.rerouteSingle('${c.id}')">
+              Reroute
+            </button>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
 
-  // Rebind Checkbox Listeners
-  document.querySelectorAll('.convoy-checkbox').forEach(cb => {
-    cb.addEventListener('change', handleRowCheckboxChange);
-  });
+      // Render Path Diff Row if Expanded
+      if (c.oldPath && isExpanded) {
+        const diffTr = document.createElement('tr');
+        diffTr.className = 'path-diff-row';
+        diffTr.innerHTML = `
+          <td colspan="8">
+            <div class="path-diff-container">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                <strong>🔄 RECOMPUTED SHORTEST-SAFE-PATH DIFF</strong>
+                <span class="badge badge-caution" style="font-size: 10px;">REASON: ${c.rationale}</span>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4);">
+                <div>
+                  <span class="panel-label" style="color: var(--slate-500);">PREVIOUS PATH (BLOCKED)</span>
+                  <div class="old-path-diff">${c.oldPath}</div>
+                </div>
+                <div>
+                  <span class="panel-label" style="color: var(--forest-700);">VERIFIED SAFE REROUTE</span>
+                  <div class="new-path-diff">${c.newPath}</div>
+                </div>
+              </div>
+              ${c.relayPoint ? `
+                <div style="margin-top: 8px; padding-top: 6px; border-top: 1px dashed var(--border-hairline); font-size: var(--text-xs); color: var(--slate-800); font-weight: 600;">
+                  🔄 RELAY HANDOFF LEG: ${c.relayPoint}
+                </div>
+              ` : ''}
+            </div>
+          </td>
+        `;
+        tbody.appendChild(diffTr);
+      }
+    });
 
-  updateBulkActionBar();
-}
-
-/* --------------------------------------------------------------------------
-   3. BULK SELECTION & OPERATIONAL CONFIRMATION WORKFLOW
-   -------------------------------------------------------------------------- */
-function handleRowCheckboxChange(e) {
-  const id = e.target.getAttribute('data-id');
-  if (e.target.checked) {
-    selectedConvoyIds.add(id);
-  } else {
-    selectedConvoyIds.delete(id);
+    this.updateBulkBar();
   }
 
-  updateBulkActionBar();
-}
+  toggleSelect(id, checked) {
+    if (checked) this.selectedIds.add(id);
+    else this.selectedIds.delete(id);
+    this.updateBulkBar();
+  }
 
-function handleSelectAll(e) {
-  const checkboxes = document.querySelectorAll('.convoy-checkbox');
-  checkboxes.forEach(cb => {
-    cb.checked = e.target.checked;
-    const id = cb.getAttribute('data-id');
-    if (e.target.checked) {
-      selectedConvoyIds.add(id);
+  toggleSelectAll(checked) {
+    const convoys = this.getFilteredConvoys();
+    if (checked) {
+      convoys.forEach(c => this.selectedIds.add(c.id));
     } else {
-      selectedConvoyIds.delete(id);
+      this.selectedIds.clear();
     }
-  });
-
-  updateBulkActionBar();
-}
-
-function updateBulkActionBar() {
-  const bar = document.getElementById('bulk-action-bar');
-  const countText = document.getElementById('bulk-selected-count');
-
-  if (!bar || !countText) return;
-
-  if (selectedConvoyIds.size > 0) {
-    bar.style.display = 'flex';
-    countText.textContent = `${selectedConvoyIds.size} Convoy${selectedConvoyIds.size > 1 ? 's' : ''} Selected`;
-  } else {
-    bar.style.display = 'none';
-  }
-}
-
-function openBulkConfirmModal() {
-  if (selectedConvoyIds.size === 0) return;
-
-  const modal = document.getElementById('modal-bulk-confirm');
-  const targetRouteSelect = document.getElementById('bulk-target-route');
-  const selectedRoute = targetRouteSelect ? targetRouteSelect.value : 'Route C (Feeder Corridor)';
-
-  const convoyListStr = Array.from(selectedConvoyIds).join(', ');
-  const convoysElem = document.getElementById('bulk-modal-convoys');
-  const routeElem = document.getElementById('bulk-modal-target-route');
-  const commitBtn = document.getElementById('btn-commit-bulk');
-
-  if (convoysElem) convoysElem.textContent = convoyListStr;
-  if (routeElem) routeElem.textContent = selectedRoute;
-
-  // Requirement: Direct operational confirmation language (e.g. "Dispatch 4 Convoys to Route C")
-  if (commitBtn) {
-    commitBtn.textContent = `Dispatch ${selectedConvoyIds.size} Convoy${selectedConvoyIds.size > 1 ? 's' : ''} to ${selectedRoute.split(' ')[0]}`;
+    this.render();
   }
 
-  if (modal) modal.style.display = 'flex';
-}
+  clearSelection() {
+    this.selectedIds.clear();
+    document.getElementById('select-all-checkbox').checked = false;
+    this.render();
+  }
 
-function closeBulkModal() {
-  const modal = document.getElementById('modal-bulk-confirm');
-  if (modal) modal.style.display = 'none';
-}
-
-function executeBulkDispatch() {
-  const targetRouteSelect = document.getElementById('bulk-target-route');
-  const selectedRoute = targetRouteSelect ? targetRouteSelect.value : 'Route C (Feeder Corridor)';
-  const count = selectedConvoyIds.size;
-
-  selectedConvoyIds.forEach(id => {
-    const idx = missionsList.findIndex(m => (m.convoy_id || m.id) === id);
-    if (idx !== -1) {
-      missionsList[idx].status = 'On Route';
-      missionsList[idx].route = selectedRoute;
-      missionsList[idx].reroute_reason = 'Cleared corridor bulk assignment';
-      missionsList[idx].eta_delta = 'On Time';
+  updateBulkBar() {
+    const bar = document.getElementById('bulk-bar');
+    const countEl = document.getElementById('bulk-selected-count');
+    if (this.selectedIds.size > 0) {
+      bar.classList.remove('hidden');
+      countEl.innerText = `${this.selectedIds.size} Convoy(s) Selected`;
+    } else {
+      bar.classList.add('hidden');
     }
-  });
-
-  closeBulkModal();
-  selectedConvoyIds.clear();
-  const selectAllCb = document.getElementById('select-all-convoys');
-  if (selectAllCb) selectAllCb.checked = false;
-
-  renderConvoyTable();
-  toast.show(`Operational Dispatch Executed: ${count} convoy(s) assigned to ${selectedRoute}`, 'safe', 3500);
-}
-
-/* --------------------------------------------------------------------------
-   4. NEW MISSION DISPATCH MODAL WORKFLOW
-   -------------------------------------------------------------------------- */
-function openNewDispatchModal() {
-  const modal = document.getElementById('modal-new-dispatch');
-  if (modal) modal.style.display = 'flex';
-}
-
-function closeNewDispatchModal() {
-  const modal = document.getElementById('modal-new-dispatch');
-  if (modal) modal.style.display = 'none';
-}
-
-async function handleNewDispatchSubmit(e) {
-  e.preventDefault();
-
-  const cargo = document.getElementById('input-cargo')?.value;
-  const driver = document.getElementById('input-driver')?.value;
-  const origin = document.getElementById('input-origin')?.value;
-  const destination = document.getElementById('input-destination')?.value;
-  const route = document.getElementById('input-route')?.value;
-
-  const newMission = {
-    id: `CV-${Math.floor(100 + Math.random() * 900)}`,
-    cargo,
-    driver,
-    origin,
-    destination,
-    route,
-    status: 'On Route',
-    eta: '40m',
-    eta_delta: 'Nominal',
-    reroute_reason: 'Optimal initial route cleared'
-  };
-
-  try {
-    await api.createMission(newMission).catch(() => null);
-  } catch (err) {
-    console.warn('[ConvoyDispatch] API mission create fallback:', err.message);
   }
 
-  missionsList.unshift(newMission);
-  closeNewDispatchModal();
-  document.getElementById('form-new-dispatch')?.reset();
-
-  renderConvoyTable();
-  toast.show(`Emergency Mission ${newMission.id} successfully dispatched!`, 'safe', 3000);
-}
-
-/* --------------------------------------------------------------------------
-   5. REAL-TIME SOCKET STREAM PATCH HANDLER
-   -------------------------------------------------------------------------- */
-function handleMissionUpdateStream(updatedMission) {
-  const targetId = updatedMission.id || updatedMission.convoy_id;
-  const idx = missionsList.findIndex(m => (m.convoy_id || m.id) === targetId);
-
-  if (idx !== -1) {
-    Object.assign(missionsList[idx], updatedMission);
-  } else {
-    missionsList.unshift(updatedMission);
+  toggleDiff(id) {
+    if (this.expandedDiffs.has(id)) this.expandedDiffs.delete(id);
+    else this.expandedDiffs.add(id);
+    this.render();
   }
 
-  renderConvoyTable();
-  toast.show(`Real-Time Telemetry: Convoy ${targetId} row updated`, 'safe', 2500);
-}
+  rerouteSingle(id) {
+    const convoy = this.convoys.find(c => c.id === id);
+    if (convoy) {
+      convoy.status = 'Rerouted';
+      convoy.riskLevel = 'low';
+      convoy.oldPath = convoy.newPath || 'Previous Path';
+      convoy.newPath = 'Bypass Corridor 4 (Verified Clear)';
+      convoy.rationale = 'Manual dispatch reroute issued by operator.';
+      this.render();
+      toast.success(`${convoy.name} rerouted to Bypass Corridor 4! Reroute pushed live to driver.`);
+    }
+  }
 
-// Fallback Mock Missions
-function getMockMissions() {
-  return [
-    {
-      id: 'CV-014',
-      cargo: 'Refrigerated Insulin & Blood Bags',
-      origin: 'Regional Logistics Hub A',
-      destination: 'Shelter 06 (Sector 4)',
-      route: 'Feeder Road C',
-      old_route: 'Route B (Bridge Submerged)',
-      status: 'Rerouted',
-      reroute_reason: 'Bridge B-14 Submerged in 1.4m floodwater',
-      eta: '1h 42m',
-      eta_delta: '+38 min',
-      driver: 'Driver Marcus V. (CH-4)'
-    },
-    {
-      id: 'CV-009',
-      cargo: 'Infant Nutrition & Formula',
-      origin: 'Logistics Hub B',
-      destination: 'Shelter 02 (Sector 1)',
-      route: 'Highway 1 Direct',
+  executeBulkDispatch() {
+    if (this.selectedIds.size === 0) return;
+    this.selectedIds.forEach(id => {
+      const convoy = this.convoys.find(c => c.id === id);
+      if (convoy) {
+        convoy.status = 'On Route';
+        convoy.riskLevel = 'low';
+        convoy.ackStatus = 'Acknowledged';
+      }
+    });
+
+    toast.success(`Bulk dispatch complete for ${this.selectedIds.size} convoys along verified safe routes!`);
+    this.clearSelection();
+  }
+
+  applyFilters() {
+    this.render();
+  }
+
+  resetFilters() {
+    document.getElementById('filter-cargo').value = 'ALL';
+    document.getElementById('filter-status').value = 'ALL';
+    document.getElementById('sort-by').value = 'risk';
+    this.render();
+  }
+
+  openNewConvoyModal() {
+    document.getElementById('new-convoy-modal').classList.remove('hidden');
+  }
+
+  closeNewConvoyModal() {
+    document.getElementById('new-convoy-modal').classList.add('hidden');
+  }
+
+  handleNewConvoySubmit(e) {
+    e.preventDefault();
+    const name = document.getElementById('convoy-name-input').value.trim();
+    const priority = document.getElementById('cargo-priority-input').value;
+    const origin = document.getElementById('origin-select').value;
+    const dest = document.getElementById('dest-select').value;
+
+    const newConvoy = {
+      id: `convoy-${Date.now()}`,
+      name: name,
+      cargo: `${priority} Emergency Relief Cargo`,
+      priority: priority,
+      origin: origin,
+      dest: dest,
       status: 'On Route',
-      reroute_reason: 'Optimal clear corridor',
-      eta: '45m',
-      eta_delta: 'On Time',
-      driver: 'Driver Sarah L. (CH-2)'
-    },
-    {
-      id: 'CV-022',
-      cargo: 'Clean Drinking Water Rations',
-      origin: 'Water Purification Hub 3',
-      destination: 'Shelter 09 (Sector 6)',
-      route: 'Sector 6 Outer Ring',
-      status: 'Stranded',
-      old_route: 'Sector 6 Main Arterial',
-      reroute_reason: 'Hillside debris slide blocking pass',
-      eta: '2h 10m',
-      eta_delta: '+1h 15m',
-      driver: 'Driver Alex K. (CH-9)'
-    }
-  ];
+      driver: 'Unit-12 (Driver Dispatch)',
+      ackStatus: 'Acknowledged',
+      eta: '15:45 UTC',
+      riskLevel: 'low',
+      oldPath: null,
+      newPath: 'Direct Verified Corridor',
+      rationale: 'New mission authorized along verified shortest-safe-path.'
+    };
+
+    this.convoys.unshift(newConvoy);
+    this.closeNewConvoyModal();
+    this.render();
+    toast.success(`New mission "${name}" dispatched from ${origin} to ${dest}!`);
+  }
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+  window.convoyDispatch = new ConvoyDispatchManager();
+  window.convoyDispatch.init();
+});

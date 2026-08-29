@@ -3,85 +3,431 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login - DISISSTA Emergency Logistics Platform</title>
+  <title>DISISTA CONTROL — Relief Route Intelligence Portal</title>
+  <meta name="description" content="Emergency Relief Supply Chain Resilience & Rerouting System — Operational Portal Sign-In">
+  
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/components.css">
-  <link rel="stylesheet" href="css/layout.css">
+
   <style>
-    .login-wrapper {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background-color: var(--bg-honeydew);
-      padding: var(--space-md);
-    }
-    .login-card {
-      background-color: var(--white);
-      border: 1px solid var(--sage-500);
-      border-radius: var(--radius-lg);
-      padding: var(--space-xl);
-      width: 100%;
-      max-width: 440px;
-      box-shadow: var(--shadow-lg);
-    }
-    .login-header {
-      text-align: center;
-      margin-bottom: var(--space-lg);
-    }
-    .login-emblem {
-      width: 56px;
-      height: 56px;
-      background-color: var(--slate-800);
+    /* Specialized Page Layout for Landing/Login */
+    .portal-hero {
+      background-color: var(--forest-700);
       color: var(--white);
-      border-radius: var(--radius);
+      padding: var(--space-6) var(--space-5);
+      border-bottom: 2px solid var(--forest-600);
+    }
+
+    .portal-hero-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-6);
+      align-items: center;
+    }
+
+    @media (max-width: 900px) {
+      .portal-hero-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .hero-tag {
       display: inline-flex;
       align-items: center;
-      justify-content: center;
-      font-weight: 900;
-      font-size: 1.5rem;
-      margin-bottom: var(--space-xs);
+      gap: var(--space-2);
+      background-color: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 4px var(--space-3);
+      border-radius: var(--radius-full);
+      font-size: var(--text-xs);
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: var(--space-3);
+    }
+
+    .hero-title {
+      font-size: 32px;
+      font-weight: 700;
+      line-height: 1.2;
+      margin-bottom: var(--space-3);
+      color: var(--white);
+    }
+
+    .hero-desc {
+      font-size: var(--text-base);
+      color: var(--sage-100);
+      line-height: 1.6;
+      margin-bottom: var(--space-4);
+    }
+
+    .pillar-list {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-3);
+    }
+
+    .pillar-item {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: var(--space-3);
+      border-radius: var(--radius);
+      font-size: var(--text-xs);
+    }
+
+    .pillar-item strong {
+      display: block;
+      color: var(--white);
+      font-size: var(--text-sm);
+      margin-bottom: 2px;
+    }
+
+    /* Role Cards Grid */
+    .section-title {
+      margin-bottom: var(--space-4);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .roles-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: var(--space-4);
+      margin-bottom: var(--space-6);
+    }
+
+    .role-card {
+      cursor: pointer;
+      position: relative;
+      user-select: none;
+    }
+
+    .role-card.selected {
+      border: 2px solid var(--forest-600) !important;
+      background-color: var(--white);
+    }
+
+    .role-card.selected::after {
+      content: "SELECTED";
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      font-size: 10px;
+      font-weight: 700;
+      background-color: var(--forest-600);
+      color: var(--white);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .role-badge {
+      font-size: var(--text-xs);
+      font-weight: 600;
+      color: var(--forest-700);
+      background-color: var(--sage-100);
+      padding: 2px var(--space-2);
+      border-radius: var(--radius-full);
+      display: inline-block;
+      margin-bottom: var(--space-2);
+    }
+
+    /* Login Form Card */
+    .login-container {
+      max-width: 520px;
+      margin: 0 auto var(--space-7) auto;
+    }
+
+    .quick-switch-bar {
+      background-color: var(--sage-100);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+      margin-top: var(--space-5);
+    }
+
+    .quick-btn-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: var(--space-2);
+      margin-top: var(--space-3);
     }
   </style>
 </head>
 <body>
-  <div class="login-wrapper">
-    <main class="login-card">
-      <div class="login-header">
-        <div class="login-emblem">NDMA</div>
-        <h1>DISISSTA Command Access</h1>
-        <p style="font-size: 0.9rem; color: var(--slate-700);">Relief Supply Chain Resilience & Rerouting System</p>
+
+  <!-- APP HEADER -->
+  <header class="app-header">
+    <a href="login.html" class="brand">
+      <div class="brand-emblem">D</div>
+      <div class="brand-title">
+        <span class="brand-name">DISISTA CONTROL</span>
+        <span class="brand-sub">Relief Route Intelligence</span>
+      </div>
+    </a>
+
+    <div class="header-controls">
+      <div class="system-status">
+        <span class="status-dot"></span>
+        <span id="live-clock">UTC 00:00:00</span>
+      </div>
+      <button class="btn btn-toggle" id="field-mode-btn" onclick="auth.toggleFieldMode(); updateFieldBtnText();">
+        Field Mode: OFF
+      </button>
+    </div>
+  </header>
+
+  <!-- HERO SECTION -->
+  <section class="portal-hero">
+    <div class="container">
+      <div class="portal-hero-grid">
+        <div>
+          <div class="hero-tag">
+            <span>🛡️ Official Government Emergency Infrastructure</span>
+          </div>
+          <h1 class="hero-title">Emergency Relief Supply Chain Resilience & Rerouting</h1>
+          <p class="hero-desc">
+            Single-source operational command for predictive hazard fusion, dynamic convoy rerouting, shelter demand telemetry, and inter-warehouse Supply Swap balancing.
+          </p>
+        </div>
+
+        <div class="pillar-list">
+          <div class="pillar-item">
+            <strong>🌐 Live Hazard Fusion</strong>
+            Recency + sensor corroboration confidence mapping.
+          </div>
+          <div class="pillar-item">
+            <strong>🚛 Dynamic Rerouting</strong>
+            Automated shortest-safe-path recomputation for convoys.
+          </div>
+          <div class="pillar-item">
+            <strong>📦 Supply Swap</strong>
+            Inter-warehouse stock balancing & cold-chain transfers.
+          </div>
+          <div class="pillar-item">
+            <strong>⚡ Isolated Shelter Alert</strong>
+            Automated reachability audit & auto-escalations.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MAIN OPERATIONAL PORTAL -->
+  <main class="page-main">
+    <div class="container" style="margin-top: var(--space-6);">
+
+      <!-- STEP 1: ROLE SELECTION -->
+      <div class="section-title">
+        <div>
+          <span class="panel-label">OPERATIONAL AUTHORIZATION</span>
+          <h2>Select Operational Role</h2>
+        </div>
+        <span class="text-meta">Step 1 of 2</span>
       </div>
 
-      <form id="login-form">
-        <div style="margin-bottom: var(--space-md);">
-          <label for="username" style="display: block; font-weight: 600; margin-bottom: 4px;">Operator Username / ID</label>
-          <input type="text" id="username" required placeholder="e.g. OP-4029" value="Operator-Alpha">
+      <div class="roles-grid" id="roles-container">
+        <!-- Rendered by JS -->
+      </div>
+
+      <!-- STEP 2: SIGN IN FORM -->
+      <div class="login-container">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Role Credentials Authentication</span>
+            <span class="badge badge-safe" id="selected-role-badge">Select Role Above</span>
+          </div>
+
+          <form id="login-form" onsubmit="handleLoginSubmit(event)">
+            <div id="login-error" class="form-error-msg" style="display: none; margin-bottom: var(--space-3); padding: var(--space-2); background: var(--slate-800); color: var(--white); border-radius: var(--radius);">
+              <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+              </svg>
+              <span id="login-error-text">Please select a valid role.</span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="role-select">Target Operational Role</label>
+              <select class="form-control" id="role-select" onchange="syncRoleFromDropdown(this.value)">
+                <option value="" disabled selected>-- Select Role --</option>
+                <option value="control_room">Control Room Officer (HQ Operations)</option>
+                <option value="district_admin">District Administrator (Regional Command)</option>
+                <option value="warehouse_manager">Warehouse Manager (Supply Hub)</option>
+                <option value="field_driver">Field Driver (Field Operations)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="username">Operator Identification / Badge ID</label>
+              <input type="text" class="form-control" id="username" value="Operator-409" required placeholder="e.g. OP-409">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="password">Security Passcode</label>
+              <input type="password" class="form-control" id="password" value="••••••••" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: var(--space-2);">
+              AUTHENTICATE & ENTER PORTAL →
+            </button>
+          </form>
         </div>
 
-        <div style="margin-bottom: var(--space-md);">
-          <label for="role-select" style="display: block; font-weight: 600; margin-bottom: 4px;">Operational Role</label>
-          <select id="role-select" required>
-            <option value="Control Room">Control Room Operator</option>
-            <option value="District Admin">District Admin Authority</option>
-            <option value="Field Driver">Field Convoy Driver</option>
-          </select>
+        <!-- QUICK ACCESS FOR TESTING / REVIEW -->
+        <div class="quick-switch-bar">
+          <span class="panel-label">QUICK TEST ACCESS (1-CLICK DEMO LOGIN)</span>
+          <p class="text-meta" style="margin-top: 2px;">Instantly launch the portal under any role persona:</p>
+          <div class="quick-btn-grid">
+            <button class="btn btn-secondary" onclick="quickLogin('control_room')">🎯 Control Room</button>
+            <button class="btn btn-secondary" onclick="quickLogin('district_admin')">🏛️ District Admin</button>
+            <button class="btn btn-secondary" onclick="quickLogin('warehouse_manager')">📦 Warehouse Manager</button>
+            <button class="btn btn-secondary" onclick="quickLogin('field_driver')">🚛 Field Driver</button>
+          </div>
         </div>
+      </div>
 
-        <div style="margin-bottom: var(--space-md);">
-          <label for="password" style="display: block; font-weight: 600; margin-bottom: 4px;">Authorization Key</label>
-          <input type="password" id="password" required value="••••••••">
-        </div>
+    </div>
+  </main>
 
-        <div id="login-error" class="alert-banner alert-banner--warning" style="display: none; margin-bottom: var(--space-md);"></div>
+  <!-- FOOTER -->
+  <footer class="app-footer">
+    <div>
+      <strong>DISISTA CONTROL</strong> v2.4 — Emergency Relief Supply Chain Resilience
+    </div>
+    <div style="display: flex; gap: var(--space-4);">
+      <span>🔒 Locked 4-Hue Palette</span>
+      <span>♿ WCAG AA Compliant</span>
+      <span>⚡ Offline Sync Ready</span>
+    </div>
+  </footer>
 
-        <button type="submit" class="button button--primary" style="width: 100%;">Authorize System Access</button>
-      </form>
-    </main>
-  </div>
+  <!-- CORE SCRIPTS -->
+  <script src="js/auth.js"></script>
+  <script src="js/statusBadge.js"></script>
+  <script src="js/toast.js"></script>
+  <script src="js/api.js"></script>
 
-  <script type="module" src="js/pages/login.js"></script>
+  <script>
+    let selectedRoleId = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      // Guard route (if logged in, redirect to default screen)
+      if (auth.isLoggedIn()) {
+        const user = auth.getCurrentUser();
+        if (user && user.role) {
+          const roleConfig = Object.values(ROLES).find(r => r.id === user.role);
+          if (roleConfig) {
+            window.location.href = roleConfig.defaultScreen;
+            return;
+          }
+        }
+      }
+
+      renderRoleCards();
+      startLiveClock();
+      updateFieldBtnText();
+    });
+
+    function startLiveClock() {
+      const clockEl = document.getElementById('live-clock');
+      const update = () => {
+        const now = new Date();
+        clockEl.innerText = `UTC ${now.toISOString().substring(11, 19)}`;
+      };
+      update();
+      setInterval(update, 1000);
+    }
+
+    function updateFieldBtnText() {
+      const btn = document.getElementById('field-mode-btn');
+      const isField = auth.isFieldMode();
+      btn.innerText = `Field Mode: ${isField ? 'ON' : 'OFF'}`;
+      btn.classList.toggle('active', isField);
+    }
+
+    function renderRoleCards() {
+      const container = document.getElementById('roles-container');
+      container.innerHTML = '';
+
+      Object.values(ROLES).forEach(role => {
+        const card = document.createElement('div');
+        card.className = `card role-card hover-focus ${selectedRoleId === role.id ? 'selected' : ''}`;
+        card.setAttribute('tabindex', '0');
+        card.onclick = () => selectRole(role.id);
+        card.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') selectRole(role.id); };
+
+        card.innerHTML = `
+          <span class="role-badge">${role.badge}</span>
+          <h3 style="margin-bottom: 4px;">${role.name}</h3>
+          <p style="font-size: var(--text-sm); color: var(--slate-500); margin-bottom: var(--space-3); line-height: 1.4;">
+            ${role.description}
+          </p>
+          <div style="font-size: var(--text-xs); color: var(--forest-700); font-weight: 600;">
+            Default Landing: <code>${role.defaultScreen}</code>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function selectRole(roleId) {
+      selectedRoleId = roleId;
+      document.getElementById('role-select').value = roleId;
+      
+      const roleConfig = Object.values(ROLES).find(r => r.id === roleId);
+      const badge = document.getElementById('selected-role-badge');
+      badge.innerText = roleConfig ? roleConfig.name : 'Select Role';
+
+      document.getElementById('login-error').style.display = 'none';
+      renderRoleCards();
+    }
+
+    function syncRoleFromDropdown(roleId) {
+      selectedRoleId = roleId;
+      const roleConfig = Object.values(ROLES).find(r => r.id === roleId);
+      const badge = document.getElementById('selected-role-badge');
+      badge.innerText = roleConfig ? roleConfig.name : 'Select Role';
+      renderRoleCards();
+    }
+
+    function handleLoginSubmit(event) {
+      event.preventDefault();
+      const role = document.getElementById('role-select').value;
+      const username = document.getElementById('username').value.trim();
+
+      if (!role) {
+        showError('Please select an operational role to authenticate.');
+        return;
+      }
+
+      try {
+        const targetScreen = auth.login(role, username);
+        const rConf = Object.values(ROLES).find(r => r.id === role);
+        toast.success(`Authenticated as ${rConf ? rConf.name : role}. Redirecting...`);
+        setTimeout(() => {
+          window.location.href = targetScreen;
+        }, 600);
+      } catch (err) {
+        showError(err.message);
+      }
+    }
+
+    function quickLogin(roleId) {
+      selectRole(roleId);
+      const targetScreen = auth.login(roleId, 'QuickTest-Operator');
+      toast.success(`Quick login authorized for ${roleId}. Redirecting...`);
+      setTimeout(() => {
+        window.location.href = targetScreen;
+      }, 500);
+    }
+
+    function showError(msg) {
+      const errDiv = document.getElementById('login-error');
+      const errTxt = document.getElementById('login-error-text');
+      errTxt.innerText = msg;
+      errDiv.style.display = 'flex';
+    }
+  </script>
 </body>
 </html>
-

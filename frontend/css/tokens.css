@@ -1,29 +1,57 @@
-/* Design System Tokens - Single Source of Truth */
+/* ==========================================
+   DISISTA CONTROL — DESIGN TOKENS
+   Locked 4-Hue Palette System
+   ========================================== */
+
 :root {
-  /* Approved Government Palette */
-  --bg-honeydew: #EDF3E0;
-  --sage-500: #8FAF8C;
-  --forest-600: #5A7A68;
-  --forest-700: #4A6656;
-  --sage-100: #E4EBE0;
-  --slate-800: #3A4750;
+  /* Locked Palette — Do not introduce new hues */
+  --bg-honeydew:     #EDF3E0;
+  --sage-500:        #8FAF8C;
+  --forest-600:      #5A7A68;
+  --forest-700:      #4A6656;
+  --sage-100:        #E4EBE0;
+  --slate-800:       #3A4750;
 
-  /* Additional shades for visual depth as approved by guidelines */
-  --forest-100: #EBF0ED;
-  --forest-900: #1B2921;
-  --white: #FFFFFF;
-  --slate-100: #ECEFF1;
-  --slate-300: #CFD8DC;
-  --slate-900: #1C242B;
+  /* Additive Neutrals — Structure & Contrast */
+  --white:           #FFFFFF;
+  --slate-500:       #6B7680;
+  --border-hairline: #D8E0D2;
 
-  /* Font Stack */
-  --font-sans: 'Inter', 'IBM Plex Sans', 'Noto Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  /* Radii */
+  --radius:          8px;
+  --radius-lg:       12px; /* Modals / Sheets only */
+  --radius-full:     9999px;
 
-  /* Layout / Radii */
-  --radius: 8px;
-  --transition-fast: 0.15s ease;
-  --transition-normal: 0.25s ease;
-  
-  /* Touch target sizes */
-  --touch-target-min: 44px;
+  /* Typography */
+  --font-sans:       'Inter', 'IBM Plex Sans', 'Noto Sans', system-ui, -apple-system, sans-serif;
+
+  /* Spacing Scale (4px base) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  /* Type Scale — Data-Dense Ops UI (1.2 ratio) */
+  --text-xs:   12px;
+  --text-sm:   14px;
+  --text-base: 16px;
+  --text-lg:   19px;
+  --text-xl:   23px;
+  --text-2xl:  28px;
+
+  /* Motion */
+  --motion-fast: 120ms;
+  --motion-base: 200ms;
+  --ease:        cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Field Mode Accessibility Token Override */
+body.field-mode {
+  --text-base:       18px;
+  --text-sm:         16px;
+  --text-xs:         14px;
+  --border-hairline: #B9C6B4;
 }

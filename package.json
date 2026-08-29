@@ -1,20 +1,18 @@
 {
-  "name": "disissta-control-frontend",
+  "name": "disista-control-frontend",
   "version": "1.0.0",
-  "description": "Relief Supply Chain Resilience & Rerouting System — Warehouse Manager & Operations Platform",
+  "description": "Relief Route Intelligence — Emergency Relief Supply Chain Resilience & Rerouting System",
   "main": "frontend/index.html",
   "scripts": {
-    "start": "npx serve frontend -p 3000",
-    "dev": "npx serve frontend -p 3000",
-    "serve": "npx serve frontend -p 3000"
+    "dev": "npx -y serve ./frontend -p 8080",
+    "start": "npx -y serve ./frontend -p 8080"
   },
   "keywords": [
-    "disaster-management",
-    "humanitarian-logistics",
+    "relief",
     "supply-chain",
-    "rerouting",
-    "emergency-operations"
+    "disista-control",
+    "rerouting"
   ],
-  "author": "NDMA Logistics & Operations Center",
-  "license": "MIT"
+  "author": "DISISTA Control Team",
+  "license": "ISC"
 }

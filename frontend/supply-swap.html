@@ -3,218 +3,493 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Supply Swap & Surplus Matching Center — Warehouse Manager Operations & Regional Relief Inventory Transfer.">
-  <title>Supply Swap & Surplus Matching — DISISSTA Platform</title>
+  <title>DISISTA CONTROL — Inter-Warehouse Supply Swap Engine</title>
+  <meta name="description" content="Inter-Warehouse Inventory Rebalancing, Cold-Chain Transfer Matching, and Supply Swap Lifecycle Management">
 
-  <!-- Typography -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-  <!-- CSS Architecture -->
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/components.css">
 
   <style>
-    .kpi-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: var(--space-md);
-      margin-bottom: var(--space-lg);
-    }
-    .kpi-card {
-      background-color: var(--white);
-      border: 1px solid var(--slate-300);
-      border-radius: var(--radius);
-      padding: var(--space-md);
+    /* Tab Navigation */
+    .tab-bar {
       display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      transition: transform var(--transition-fast), border-color var(--transition-fast);
+      gap: 0;
+      margin-bottom: var(--space-5);
+      border-bottom: 2px solid var(--border-hairline);
+      overflow-x: auto;
+    }
+
+    .tab-btn {
+      padding: var(--space-3) var(--space-5);
+      font-weight: 600;
+      font-size: var(--text-sm);
       cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--slate-500);
+      border-bottom: 3px solid transparent;
+      transition: color var(--motion-fast) var(--ease), border-color var(--motion-fast) var(--ease);
+      white-space: nowrap;
+      position: relative;
+      bottom: -2px;
     }
-    .kpi-card:hover {
-      border-color: var(--forest-600);
-      transform: translateY(-2px);
+
+    .tab-btn.active {
+      color: var(--forest-700);
+      border-bottom: 3px solid var(--forest-600);
     }
-    .kpi-card__title {
-      font-size: var(--font-size-xs);
-      font-weight: 700;
-      text-transform: uppercase;
-      color: var(--slate-700);
-      margin-bottom: 4px;
+
+    .tab-btn:hover:not(.active) {
+      color: var(--slate-800);
     }
-    .kpi-card__value {
-      font-size: 1.8rem;
-      font-weight: 700;
-      color: var(--slate-900);
+
+    .tab-panel {
+      display: none;
     }
-    .swap-card-list {
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    /* Summary Strip */
+    .summary-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: var(--space-4);
+      margin-bottom: var(--space-5);
+    }
+
+    .metric-card {
+      background: var(--white);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius);
+      padding: var(--space-4);
+    }
+
+    /* Transfer Form */
+    .swap-form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-4);
+    }
+
+    @media (max-width: 768px) {
+      .swap-form-grid { grid-template-columns: 1fr; }
+    }
+
+    /* Impact Preview Box */
+    .impact-preview-box {
+      background: var(--sage-100);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius);
+      padding: var(--space-4);
+      margin-top: var(--space-4);
+    }
+
+    .impact-preview-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-4);
+      margin-top: var(--space-3);
+    }
+
+    .impact-hub-card {
+      background: var(--white);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius);
+      padding: var(--space-3);
+    }
+
+    /* Transfer Lifecycle Timeline */
+    .lifecycle-track {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin: var(--space-3) 0;
+      overflow-x: auto;
+    }
+
+    .lifecycle-step {
       display: flex;
       flex-direction: column;
-      gap: var(--space-md);
-    }
-    .swap-item-card {
-      background: var(--white);
-      border: 1px solid var(--slate-300);
-      border-radius: var(--radius);
-      padding: var(--space-md);
-      display: grid;
-      grid-template-columns: 1.5fr 1fr 1fr 1fr auto;
       align-items: center;
-      gap: var(--space-md);
+      gap: 4px;
+      min-width: 80px;
     }
-    @media (max-width: 900px) {
-      .swap-item-card {
-        grid-template-columns: 1fr;
-      }
+
+    .lifecycle-dot {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      border: 2px solid var(--border-hairline);
+      background: var(--white);
+      color: var(--slate-500);
+    }
+
+    .lifecycle-dot.done {
+      background: var(--forest-700);
+      border-color: var(--forest-700);
+      color: var(--white);
+    }
+
+    .lifecycle-dot.active {
+      background: var(--forest-600);
+      border-color: var(--forest-600);
+      color: var(--white);
+      box-shadow: 0 0 0 3px rgba(90, 122, 104, 0.3);
+    }
+
+    .lifecycle-label {
+      font-size: 9px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      text-align: center;
+      color: var(--slate-500);
+      line-height: 1.2;
+    }
+
+    .lifecycle-label.done, .lifecycle-label.active {
+      color: var(--forest-700);
+    }
+
+    .lifecycle-line {
+      flex: 1;
+      height: 2px;
+      background: var(--border-hairline);
+      min-width: 20px;
+      margin-bottom: 18px;
+    }
+
+    .lifecycle-line.done {
+      background: var(--forest-600);
+    }
+
+    /* Active Transfer Card */
+    .transfer-card {
+      background: var(--white);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius);
+      padding: var(--space-4);
+      margin-bottom: var(--space-4);
+      transition: border-color var(--motion-fast) var(--ease);
+    }
+
+    .transfer-card:hover {
+      border-color: var(--forest-600);
+    }
+
+    .transfer-card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: var(--space-3);
+    }
+
+    /* Stock Bar */
+    .stock-bar-container {
+      margin-top: var(--space-2);
+    }
+
+    .stock-bar-track {
+      height: 8px;
+      background: var(--sage-100);
+      border-radius: 4px;
+      overflow: hidden;
+      margin: 4px 0;
+    }
+
+    .stock-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      background: var(--forest-600);
+      transition: width var(--motion-base) var(--ease);
+    }
+
+    .stock-bar-fill.danger {
+      background: var(--slate-800);
+    }
+
+    .stock-bar-fill.warning {
+      background: var(--forest-700);
+    }
+
+    /* Cold-Chain Warning Banner */
+    .cold-chain-alert {
+      background: #F0F5F2;
+      border: 1px solid var(--forest-600);
+      border-left: 4px solid var(--forest-600);
+      border-radius: var(--radius);
+      padding: var(--space-3);
+      font-size: var(--text-xs);
+      margin-bottom: var(--space-4);
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-4);
+    }
+
+    .modal-overlay.hidden {
+      display: none;
+    }
+
+    .modal-card {
+      background: var(--white);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-hairline);
+      width: 100%;
+      max-width: 580px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: var(--space-5);
     }
   </style>
 </head>
 <body>
-  <div class="app-shell">
-    <header class="app-header" id="app-header"></header>
 
-    <div class="app-body">
-      <nav class="app-nav" id="app-nav" aria-label="Operational Navigation"></nav>
+  <main class="page-main">
+    <div class="container" style="margin-top: var(--space-5);">
 
-      <main class="app-main" id="main-content">
-        <header style="display:flex; justify-content:space-between; align-items:center;">
-          <div>
-            <h1>Supply Swap & Surplus Matching</h1>
-            <p class="text-sm" style="color:var(--slate-600);">Warehouse Manager decisions: Match regional warehouse surpluses with urgent shelter shortages before time-to-harm expires.</p>
-          </div>
-          <div>
-            <button class="button button--primary" id="btn-create-swap">🔄 Initiate Supply Swap Offer</button>
-          </div>
-        </header>
+      <!-- PAGE HEADER -->
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-5);">
+        <div>
+          <span class="panel-label">INTER-WAREHOUSE REBALANCING SYSTEM</span>
+          <h2>Supply Swap Engine</h2>
+        </div>
+        <div style="display: flex; gap: var(--space-2); align-items: center;">
+          <span class="badge badge-safe" id="role-access-badge">Warehouse Manager</span>
+          <span class="badge badge-blocked" id="match-alert-badge" style="display: none;">⚡ Critical Match Available</span>
+        </div>
+      </div>
 
-        <!-- KPI Metrics Grid -->
-        <div class="kpi-grid">
-          <div class="kpi-card">
-            <div class="kpi-card__title">Transferable Inventory</div>
-            <div class="kpi-card__value" id="kpi-inventory">2,480 <span style="font-size:0.9rem; font-weight:normal;">units</span></div>
-            <div class="text-xs" style="color:var(--forest-700); margin-top:4px;">● 87% Healthy Operational Status</div>
+      <!-- SUMMARY DASHBOARD STRIP -->
+      <div class="summary-strip">
+        <div class="metric-card">
+          <span class="text-meta">ACTIVE OFFERS POSTED</span>
+          <div class="data-numeral" id="metric-offers">2</div>
+        </div>
+        <div class="metric-card" style="border-left: 4px solid var(--forest-600);">
+          <span class="text-meta">PENDING REQUESTS</span>
+          <div class="data-numeral" style="color: var(--forest-700);" id="metric-requests">1</div>
+        </div>
+        <div class="metric-card" style="border-left: 4px solid var(--sage-500);">
+          <span class="text-meta">ACTIVE TRANSFERS</span>
+          <div class="data-numeral" style="color: var(--forest-600);" id="metric-active">2</div>
+        </div>
+        <div class="metric-card" style="border-left: 4px solid var(--slate-800);">
+          <span class="text-meta">CRITICAL MATCHES PENDING</span>
+          <div class="data-numeral" style="color: var(--slate-800);" id="metric-critical-matches">1</div>
+        </div>
+      </div>
+
+      <!-- COLD-CHAIN POLICY NOTICE -->
+      <div class="cold-chain-alert">
+        <strong>🧊 Cold-Chain Compliance Policy Active:</strong> Insulin, blood products, and vaccines are ONLY matched with refrigerated vehicle units. Non-refrigerated vehicles are excluded from these transfers as a hard filter — never a soft warning.
+      </div>
+
+      <!-- TAB BAR -->
+      <div class="tab-bar">
+        <button class="tab-btn active" id="tab-btn-offer" onclick="supplySwap.switchTab('offer')">
+          📤 Offer Supply
+        </button>
+        <button class="tab-btn" id="tab-btn-request" onclick="supplySwap.switchTab('request')">
+          📥 Request Supply
+        </button>
+        <button class="tab-btn" id="tab-btn-active" onclick="supplySwap.switchTab('active')">
+          🔄 Active Transfers
+          <span class="badge badge-safe" style="margin-left: 6px; font-size: 10px;" id="active-count-badge">2</span>
+        </button>
+      </div>
+
+      <!-- TAB 1: OFFER SUPPLY -->
+      <div class="tab-panel active" id="panel-offer">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-5);">
+
+          <!-- OFFER FORM -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Post Surplus Stock for Transfer</span>
+            </div>
+
+            <form onsubmit="supplySwap.handleOfferSubmit(event)">
+              <div class="form-group">
+                <label class="form-label" for="offer-from-hub">Source Warehouse Hub</label>
+                <select class="form-control" id="offer-from-hub" required>
+                  <option value="wh-bravo">Hub Bravo (Northern Rift) — 4,700 Units Available</option>
+                  <option value="wh-charlie">Hub Charlie (Coastal Base) — 9,000 Units Available</option>
+                  <option value="wh-alpha">Hub Alpha (Central Depot) — 12,000 Units Available</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="offer-cargo-type">Cargo Type</label>
+                <select class="form-control" id="offer-cargo-type" required onchange="supplySwap.checkColdChain(this.value)">
+                  <option value="Insulin/Blood">🩸 Insulin & Blood Products (Cold-Chain Required)</option>
+                  <option value="Infant Nutrition">🍼 Infant Nutrition & Emergency Food</option>
+                  <option value="Clean Water">💧 Potable Water Containers</option>
+                  <option value="General">📦 General Aid Supplies</option>
+                </select>
+              </div>
+
+              <div id="cold-chain-flag" style="display: none;" class="cold-chain-alert" style="margin-bottom: var(--space-3);">
+                🧊 <strong>Cold-Chain Required:</strong> Only refrigerated vehicle units will be offered as convoy matches for this cargo type.
+              </div>
+
+              <div class="swap-form-grid">
+                <div class="form-group">
+                  <label class="form-label" for="offer-on-hand">On-Hand Stock (Units)</label>
+                  <input type="number" class="form-control" id="offer-on-hand" value="2400" required min="1">
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="offer-reserved">Reserved (Committed)</label>
+                  <input type="number" class="form-control" id="offer-reserved" value="800" required min="0">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="offer-transferable">Transferable Quantity (Units)</label>
+                <input type="number" class="form-control" id="offer-transferable" value="1200" required min="1">
+                <span class="text-meta" style="margin-top: 2px; display: block;">Available = On-Hand minus Reserved. Transferable ≤ Available.</span>
+              </div>
+
+              <button type="submit" class="btn btn-primary" style="width: 100%;">POST SUPPLY OFFER & FIND MATCHES →</button>
+            </form>
           </div>
-          <div class="kpi-card">
-            <div class="kpi-card__title">Critical Shortage Requests</div>
-            <div class="kpi-card__value" style="color:var(--slate-900);" id="kpi-requests">03</div>
-            <div class="text-xs" style="color:var(--slate-700); margin-top:4px;">⚡ &lt; 4 Hours Time-to-Harm</div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-card__title">Surplus Swap Matches</div>
-            <div class="kpi-card__value" style="color:var(--forest-800);" id="kpi-matches">07</div>
-            <div class="text-xs" style="color:var(--slate-700); margin-top:4px;">Ready for immediate dispatch</div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-card__title">Active Transfers</div>
-            <div class="kpi-card__value" id="kpi-transfers">04</div>
-            <div class="text-xs" style="color:var(--slate-700); margin-top:4px;">En route to destination shelters</div>
+
+          <!-- CURRENT OFFERS TABLE -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Current Open Offers</span>
+              <span class="text-meta">Pending Match</span>
+            </div>
+
+            <div id="offers-list" style="display: flex; flex-direction: column; gap: var(--space-3);">
+              <!-- Rendered by JS -->
+            </div>
           </div>
         </div>
+      </div>
 
-        <!-- Filter & Sort Bar -->
-        <div class="filter-bar" style="flex-wrap: wrap;">
-          <div class="flex items-center gap-sm">
-            <span class="text-xs font-bold uppercase">Urgency Tier:</span>
-            <select style="width:auto;" id="filter-urgency">
-              <option value="all">All Urgencies</option>
-              <option value="critical">Critical (&lt; 4h Time-to-Harm)</option>
-              <option value="warning">Warning (4h – 12h)</option>
-              <option value="standard">Standard (&gt; 12h)</option>
-            </select>
+      <!-- TAB 2: REQUEST SUPPLY -->
+      <div class="tab-panel" id="panel-request">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-5);">
+
+          <!-- REQUEST FORM -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Submit Shortage Request</span>
+            </div>
+
+            <form onsubmit="supplySwap.handleRequestSubmit(event)">
+              <div class="form-group">
+                <label class="form-label" for="req-to-hub">Requesting Warehouse Hub</label>
+                <select class="form-control" id="req-to-hub" required>
+                  <option value="wh-alpha">Hub Alpha (Central Depot)</option>
+                  <option value="wh-bravo">Hub Bravo (Northern Rift)</option>
+                  <option value="wh-charlie">Hub Charlie (Coastal Base)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="req-cargo-type">Critical Resource Needed</label>
+                <select class="form-control" id="req-cargo-type" required>
+                  <option value="Insulin/Blood">🩸 Insulin & Blood Products</option>
+                  <option value="Infant Nutrition">🍼 Infant Nutrition</option>
+                  <option value="Clean Water">💧 Clean Water</option>
+                  <option value="General">📦 General Aid</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="req-qty">Quantity Needed (Units)</label>
+                <input type="number" class="form-control" id="req-qty" value="600" required min="1">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="req-urgency">Urgency Level</label>
+                <select class="form-control" id="req-urgency" required>
+                  <option value="critical">Critical — < 1.5 Days Cover</option>
+                  <option value="caution">Caution — 1.5–3 Days Cover</option>
+                  <option value="advisory">Advisory — Proactive Reorder</option>
+                </select>
+              </div>
+
+              <button type="submit" class="btn btn-destructive" style="width: 100%;">⚡ SUBMIT SHORTAGE REQUEST →</button>
+            </form>
           </div>
 
-          <div class="flex items-center gap-sm">
-            <span class="text-xs font-bold uppercase">Supply Category:</span>
-            <select style="width:auto;" id="filter-category">
-              <option value="all">All Supplies</option>
-              <option value="insulin">Insulin / Blood (Tier 1)</option>
-              <option value="nutrition">Infant Nutrition (Tier 2)</option>
-              <option value="water">Clean Water (Tier 3)</option>
-              <option value="general">General Supplies (Tier 4)</option>
-            </select>
-          </div>
-
-          <div class="flex items-center gap-sm">
-            <span class="text-xs font-bold uppercase">Route Feasibility:</span>
-            <select style="width:auto;" id="filter-route-status">
-              <option value="all">All Routes</option>
-              <option value="SAFE">SAFE (Clear Corridor)</option>
-              <option value="CAUTION">CAUTION (Reroute Required)</option>
-              <option value="BLOCKED">BLOCKED (Impassable)</option>
-            </select>
-          </div>
-
-          <div class="flex items-center gap-sm" style="margin-left: auto;">
-            <span class="text-xs font-bold uppercase">Swap Status:</span>
-            <select style="width:auto;" id="filter-swap-status">
-              <option value="all">All Swap States</option>
-              <option value="PENDING_APPROVAL">Pending Approval</option>
-              <option value="APPROVED">Approved / En Route</option>
-            </select>
+          <!-- MATCHED OFFERS LIST -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Matched Transfer Offers</span>
+              <span class="badge badge-blocked">1 Critical Match</span>
+            </div>
+            <div id="matches-list">
+              <!-- Rendered by JS -->
+            </div>
           </div>
         </div>
+      </div>
 
-        <!-- Supply Swap Requests Container -->
-        <div class="swap-card-list" id="supply-swap-list">
-          <!-- Loaded dynamically via supplySwap.js -->
+      <!-- TAB 3: ACTIVE TRANSFERS -->
+      <div class="tab-panel" id="panel-active">
+        <div id="active-transfers-container">
+          <!-- Rendered by JS -->
         </div>
-      </main>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- IMPACT PREVIEW MODAL -->
+  <div class="modal-overlay hidden" id="impact-preview-modal">
+    <div class="modal-card">
+      <div class="card-header" style="margin-bottom: var(--space-4);">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 20px;">📊</span>
+          <span class="card-title">Transfer Impact Preview</span>
+        </div>
+        <button style="background: none; border: none; font-size: 18px; cursor: pointer;" onclick="supplySwap.closeImpactModal()">✕</button>
+      </div>
+
+      <p style="font-size: var(--text-sm); color: var(--slate-500); margin-bottom: var(--space-4);">
+        Review the after-state of both warehouses before committing to this transfer. Approve only if source hub remains above its safety threshold.
+      </p>
+
+      <div id="impact-preview-content">
+        <!-- Rendered by JS -->
+      </div>
+
+      <div style="display: flex; gap: var(--space-3); margin-top: var(--space-5);">
+        <button class="btn btn-secondary" style="flex: 1;" onclick="supplySwap.closeImpactModal()">Cancel Transfer</button>
+        <button class="btn btn-primary" style="flex: 2;" onclick="supplySwap.confirmTransfer()">
+          ✓ CONFIRM TRANSFER & DISPATCH CONVOY
+        </button>
+      </div>
     </div>
   </div>
 
-  <!-- Create New Supply Swap Offer Modal -->
-  <div id="modal-create-swap" class="modal-overlay" style="display: none;">
-    <div class="modal" style="max-width: 580px;">
-      <header class="modal__header">
-        <h3 style="margin:0; font-size:var(--font-size-md);">🔄 Initiate Regional Supply Swap</h3>
-        <button id="btn-close-swap-modal" style="background:none; border:none; color:#FFF; font-size:20px; cursor:pointer;">✕</button>
-      </header>
-      <form id="form-create-swap">
-        <div class="modal__body" style="display:flex; flex-direction:column; gap:var(--space-md);">
-          <div>
-            <label class="font-semibold text-xs uppercase" style="color:var(--slate-800); display:block; margin-bottom:4px;">Target Destination (Shelter / Regional Warehouse) *</label>
-            <select id="input-target-destination" required style="width:100%;">
-              <option value="Shelter 06 (East Valley)">Shelter 06 (East Valley Sector 4 - Insulin Shortage)</option>
-              <option value="Shelter 02 (Gymnasium)">Shelter 02 (Central Sector 1 - Blood Shortage)</option>
-              <option value="Shelter 09 (River Basin)">Shelter 09 (Sector 6 - Water Shortage)</option>
-              <option value="Warehouse Bravo (Sector 2)">Warehouse Bravo (Regional Depot)</option>
-            </select>
-          </div>
+  <!-- SCRIPTS -->
+  <script src="js/auth.js"></script>
+  <script src="js/statusBadge.js"></script>
+  <script src="js/toast.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/navbar.js"></script>
+  <script src="js/pages/supplySwap.js"></script>
 
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-md);">
-            <div>
-              <label class="font-semibold text-xs uppercase" style="color:var(--slate-800); display:block; margin-bottom:4px;">Surplus Supply Item *</label>
-              <select id="input-supply-item" required style="width:100%;">
-                <option value="Refrigerated Insulin">Refrigerated Insulin (Vials)</option>
-                <option value="Whole Blood Bags (O-)">Whole Blood Bags (O-)</option>
-                <option value="Infant Nutrition Formula">Infant Nutrition Formula (Boxes)</option>
-                <option value="Potable Water Drums (20L)">Potable Water Drums (20L)</option>
-                <option value="Hygiene & Sanitation Kits">Hygiene & Sanitation Kits</option>
-              </select>
-            </div>
-            <div>
-              <label class="font-semibold text-xs uppercase" style="color:var(--slate-800); display:block; margin-bottom:4px;">Transfer Quantity *</label>
-              <input type="number" id="input-quantity" min="1" max="1000" value="50" required style="width:100%;">
-            </div>
-          </div>
-
-          <div>
-            <label class="font-semibold text-xs uppercase" style="color:var(--slate-800); display:block; margin-bottom:4px;">Estimated Time-to-Harm Urgency (Hours) *</label>
-            <input type="number" id="input-urgency-hours" min="1" max="72" value="4" required style="width:100%;">
-            <p class="text-xs" style="color:var(--slate-700); margin-top:2px;">Specify hours remaining before destination experiences critical shortage harm.</p>
-          </div>
-        </div>
-        <footer class="modal__footer">
-          <button type="button" class="button button--secondary" id="btn-cancel-swap">Cancel</button>
-          <button type="submit" class="button button--primary">Publish Supply Swap Offer</button>
-        </footer>
-      </form>
-    </div>
-  </div>
-
-  <script type="module" src="js/pages/supplySwap.js"></script>
 </body>
 </html>

@@ -3,88 +3,301 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Live Situational Map — Real-Time Hazard-Aware Route Intelligence & GIS Operations Center.">
-  <title>Live Operations Map — DISISSTA Platform</title>
+  <title>DISISTA CONTROL — Live Operational Network Map</title>
+  <meta name="description" content="Live Emergency Relief Supply Chain Network Map — Hazard Fusion & Dynamic Convoy Rerouting">
 
-  <!-- Typography -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-  <!-- CSS Architecture -->
+  <!-- Core CSS -->
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/components.css">
-  <link rel="stylesheet" href="css/layout.css">
-  
+
   <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+
+  <style>
+    /* Full-Bleed Map Layout */
+    body {
+      overflow: hidden;
+      height: 100vh;
+    }
+
+    .map-container-wrapper {
+      position: relative;
+      flex: 1;
+      width: 100%;
+      height: calc(100vh - 64px);
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+      background-color: var(--bg-honeydew);
+      z-index: 1;
+    }
+
+    /* Floating Panels */
+    .map-floating-panel {
+      position: absolute;
+      z-index: 500;
+      background: var(--white);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+      max-height: calc(100% - 32px);
+      overflow-y: auto;
+    }
+
+    .panel-left {
+      top: 16px;
+      left: 16px;
+      width: 320px;
+    }
+
+    .panel-right {
+      top: 16px;
+      right: 16px;
+      width: 340px;
+    }
+
+    .panel-header {
+      padding: var(--space-3) var(--space-4);
+      background-color: var(--slate-800);
+      color: var(--white);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top-left-radius: calc(var(--radius) - 1px);
+      border-top-right-radius: calc(var(--radius) - 1px);
+    }
+
+    .panel-body {
+      padding: var(--space-4);
+    }
+
+    /* Layer Toggles List */
+    .layer-toggle-group {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+      margin-bottom: var(--space-4);
+    }
+
+    .layer-toggle-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: var(--text-sm);
+      padding: var(--space-2);
+      background: var(--bg-honeydew);
+      border-radius: var(--radius);
+      border: 1px solid var(--border-hairline);
+    }
+
+    .layer-toggle-item label {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    /* Legend Box */
+    .legend-box {
+      background: var(--sage-100);
+      border: 1px solid var(--border-hairline);
+      border-radius: var(--radius);
+      padding: var(--space-3);
+      font-size: var(--text-xs);
+      margin-bottom: var(--space-4);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      margin-bottom: 4px;
+    }
+
+    /* Road Blocking Action Box */
+    .block-road-action-box {
+      background: #F4EBE8;
+      border: 1px solid var(--slate-800);
+      border-radius: var(--radius);
+      padding: var(--space-3);
+    }
+
+    /* Modal Overlay */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.hidden {
+      display: none;
+    }
+
+    .modal-card {
+      background: var(--white);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-hairline);
+      width: 100%;
+      max-width: 520px;
+      padding: var(--space-5);
+    }
+  </style>
 </head>
 <body>
-  <div class="app-shell">
-    <header class="app-header" id="app-header"></header>
 
-    <div class="app-body">
-      <nav class="app-nav" id="app-nav" aria-label="Operational Navigation"></nav>
+  <!-- MAP WRAPPER -->
+  <div class="map-container-wrapper">
+    <div id="map"></div>
 
-      <main class="app-main" id="main-content" style="padding: 0;">
-        <div class="map-page-wrapper">
-          <!-- Left Panel: Layers & Filters -->
-          <aside class="map-sidebar-left">
-            <h2 style="font-size: 1.1rem; margin-bottom: var(--space-sm);">Map Layers & Controls</h2>
-            
-            <div style="margin-bottom: var(--space-md);">
-              <input type="text" id="map-search" placeholder="Search Convoy, Shelter, Region...">
-            </div>
+    <!-- LEFT CONTROL & LAYER PANEL -->
+    <aside class="map-floating-panel panel-left">
+      <div class="panel-header">
+        <span class="panel-label" style="color: var(--white);">NETWORK LAYERS & CONTROLS</span>
+        <button class="btn btn-toggle" onclick="liveMap.resetView()" style="background: rgba(255,255,255,0.15); color: var(--white);">Reset View</button>
+      </div>
 
-            <div style="margin-bottom: var(--space-md); display: flex; flex-direction: column; gap: 8px;">
-              <strong style="font-size: 0.85rem; text-transform: uppercase; color: var(--slate-700);">Overlays</strong>
-              <label style="display: flex; align-items: center; gap: 8px;">
-                <input type="checkbox" id="layer-floods" checked> Flood Depth Zones
-              </label>
-              <label style="display: flex; align-items: center; gap: 8px;">
-                <input type="checkbox" id="layer-debris" checked> Debris Flows & Closures
-              </label>
-              <label style="display: flex; align-items: center; gap: 8px;">
-                <input type="checkbox" id="layer-bridges" checked> Unsafe Bridges
-              </label>
-              <label style="display: flex; align-items: center; gap: 8px;">
-                <input type="checkbox" id="layer-convoys" checked> Active Relief Convoys
-              </label>
-              <label style="display: flex; align-items: center; gap: 8px;">
-                <input type="checkbox" id="layer-shelters" checked> Emergency Shelters
-              </label>
-            </div>
-
-            <div style="margin-bottom: var(--space-md);">
-              <strong style="font-size: 0.85rem; text-transform: uppercase; color: var(--slate-700);">Legend</strong>
-              <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 6px; font-size: 0.85rem;">
-                <div>🟢 <strong>SAFE Route</strong> (Clear arterial link)</div>
-                <div>🟡 <strong>CAUTION</strong> (Degraded / Rerouted)</div>
-                <div>🛑 <strong>BLOCKED</strong> (Submerged / Impassable)</div>
-                <div>🚚 <strong>Relief Convoy</strong> (Forest Arrow)</div>
-                <div>⛺ <strong>Emergency Shelter</strong> (Home Icon)</div>
-              </div>
-            </div>
-          </aside>
-
-          <!-- Central Map -->
-          <div class="map-container" id="map-canvas"></div>
-
-          <!-- Right Panel: Selected Item Detail -->
-          <aside class="map-sidebar-right" id="map-detail-panel">
-            <h2 style="font-size: 1.1rem; margin-bottom: var(--space-sm);">Selected Entity</h2>
-            <div id="detail-panel-content">
-              <p style="color: var(--slate-700);">Click any convoy, shelter, or hazard marker on the map to inspect operational intelligence.</p>
-            </div>
-          </aside>
+      <div class="panel-body">
+        <!-- LAYER TOGGLES -->
+        <span class="panel-label">ACTIVE OVERLAYS</span>
+        <div class="layer-toggle-group" style="margin-top: var(--space-2);">
+          <div class="layer-toggle-item">
+            <label><input type="checkbox" id="layer-convoys" checked onchange="liveMap.toggleLayer('convoys', this.checked)"> 🚛 Active Convoys</label>
+            <span class="badge badge-safe">3 Active</span>
+          </div>
+          <div class="layer-toggle-item">
+            <label><input type="checkbox" id="layer-hazards" checked onchange="liveMap.toggleLayer('hazards', this.checked)"> ⚠️ Hazards & Flooding</label>
+            <span class="badge badge-caution">2 Reports</span>
+          </div>
+          <div class="layer-toggle-item">
+            <label><input type="checkbox" id="layer-shelters" checked onchange="liveMap.toggleLayer('shelters', this.checked)"> 🏛️ Relief Shelters</label>
+            <span class="badge badge-blocked">1 Isolated</span>
+          </div>
+          <div class="layer-toggle-item">
+            <label><input type="checkbox" id="layer-warehouses" checked onchange="liveMap.toggleLayer('warehouses', this.checked)"> 📦 Supply Hubs</label>
+            <span class="badge badge-safe">3 Depots</span>
+          </div>
         </div>
-      </main>
+
+        <!-- STATUS TIER LEGEND -->
+        <span class="panel-label">CONFIDENCE & STATUS LEGEND</span>
+        <div class="legend-box" style="margin-top: var(--space-2);">
+          <div class="legend-item">
+            <span class="badge badge-safe" style="padding: 1px 6px;">● Safe</span>
+            <span>Normal / Open Road</span>
+          </div>
+          <div class="legend-item">
+            <span class="badge badge-caution" style="padding: 1px 6px;">▲ Caution</span>
+            <span>Degraded / High Water</span>
+          </div>
+          <div class="legend-item">
+            <span class="badge badge-blocked" style="padding: 1px 6px;">⯁ Blocked</span>
+            <span>Impassable / Road Closed</span>
+          </div>
+          <div class="legend-item" style="margin-top: 4px; padding-top: 4px; border-top: 1px dashed var(--border-hairline);">
+            <span style="border: 1px dashed var(--slate-800); padding: 0 4px; border-radius: 4px; font-weight: 600;">Dashed Ring</span>
+            <span>Unconfirmed Hazard Report</span>
+          </div>
+        </div>
+
+        <!-- USER REQUESTED: INTERACTIVE ROAD BLOCKING TOOL -->
+        <div class="block-road-action-box">
+          <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+            <span style="font-size: 16px;">🛑</span>
+            <strong style="font-size: var(--text-sm); color: var(--slate-800);">Road Blocking Tool</strong>
+          </div>
+          <p class="text-meta" style="margin-bottom: var(--space-3);">
+            Click any point or road segment on the map, or select a road below to mark it impassable and broadcast a live reroute alert.
+          </p>
+
+          <button class="btn btn-destructive" style="width: 100%; font-size: var(--text-xs);" onclick="liveMap.openRoadBlockModal()">
+            ⚡ BLOCK ROAD SEGMENT / EMIT ALERT
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- RIGHT INSPECTOR / DETAILS PANEL -->
+    <aside class="map-floating-panel panel-right" id="inspector-panel">
+      <div class="panel-header">
+        <span class="panel-label" id="inspector-title" style="color: var(--white);">NETWORK INSPECTOR</span>
+        <span class="text-meta" style="color: var(--sage-100);" id="inspector-subtitle">Select entity</span>
+      </div>
+
+      <div class="panel-body" id="inspector-content">
+        <div style="text-align: center; padding: var(--space-6) 0; color: var(--slate-500);">
+          <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="margin-bottom: 8px;">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"/>
+          </svg>
+          <p style="font-size: var(--text-sm);">Click any convoy arrow, shelter, warehouse, or hazard marker on the map to inspect telemetry and issue actions.</p>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- ROAD BLOCKING MODAL -->
+  <div class="modal-overlay hidden" id="road-block-modal">
+    <div class="modal-card">
+      <div class="card-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 20px;">🛑</span>
+          <span class="card-title">Block Road & Issue Reroute Alert</span>
+        </div>
+        <button style="background: none; border: none; font-size: 18px; cursor: pointer;" onclick="liveMap.closeRoadBlockModal()">✕</button>
+      </div>
+
+      <form onsubmit="liveMap.handleRoadBlockSubmit(event)">
+        <div class="form-group">
+          <label class="form-label" for="modal-road-select">Select Road Segment / Route</label>
+          <select class="form-control" id="modal-road-select" required>
+            <option value="route-4-mile-12">Route 4 — Mile 12 (Rift Valley Corridor)</option>
+            <option value="bridge-b14">Bridge B14 — Northern River Crossing</option>
+            <option value="coastal-highway-8">Coastal Highway 8 — Sector 8 Segment</option>
+            <option value="custom-point">Custom Selected Map Point</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="modal-road-status">Target Status Tier</label>
+          <select class="form-control" id="modal-road-status" required>
+            <option value="impassable">Impassable / Road Closed (Slate Octagon)</option>
+            <option value="hazardous">Hazardous / Flash Flood Risk (Forest Triangle)</option>
+            <option value="restricted">Restricted Access (Caution)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="modal-road-reason">Hazard Reason & Operator Notes</label>
+          <textarea class="form-control" id="modal-road-reason" rows="3" required placeholder="e.g. Severe flooding observed, bridge deck submerged. Road is closed, convoys must reroute via Bypass 2."></textarea>
+        </div>
+
+        <div style="display: flex; gap: var(--space-3); margin-top: var(--space-4);">
+          <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="liveMap.closeRoadBlockModal()">Cancel</button>
+          <button type="submit" class="btn btn-destructive" style="flex: 2;">⚡ CONFIRM BLOCK & BROADCAST ALERT</button>
+        </div>
+      </form>
     </div>
   </div>
 
-  <!-- Leaflet JS -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script type="module" src="js/pages/liveMap.js"></script>
+  <!-- SCRIPTS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="js/auth.js"></script>
+  <script src="js/statusBadge.js"></script>
+  <script src="js/toast.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/navbar.js"></script>
+  <script src="js/pages/liveMap.js"></script>
+
 </body>
 </html>
