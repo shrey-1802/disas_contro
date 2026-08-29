@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings - DISISSTA Platform</title>
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/layout.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar" id="app-topbar"></header>
+    <nav class="sidebar" id="app-sidebar"></nav>
+
+    <main class="app-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md);">
+        <div>
+          <h1>System & Field Settings</h1>
+          <p style="color: var(--slate-700);">Configure Field Mode tablet settings, accessibility, language, and offline synchronization.</p>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: var(--space-md); max-width: 600px;">
+        <!-- Field Mode Settings -->
+        <div class="card">
+          <h3>Field Tablet Mode</h3>
+          <p style="font-size: 0.9rem; color: var(--slate-700); margin-bottom: var(--space-sm);">
+            Increases font sizing (min 16px) and expands button touch targets for outdoor sunlight tablet use.
+          </p>
+          <label style="display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 1rem; cursor: pointer;">
+            <input type="checkbox" id="toggle-field-mode" style="width: 20px; height: 20px;">
+            Enable High-Contrast Field Tablet Mode
+          </label>
+        </div>
+
+        <!-- Language Preference -->
+        <div class="card">
+          <h3>Multilingual Language</h3>
+          <p style="font-size: 0.9rem; color: var(--slate-700); margin-bottom: var(--space-sm);">
+            Select interface language. Uses fallback Noto Sans font.
+          </p>
+          <select id="select-language" style="width: 100%;">
+            <option value="en">English (Default)</option>
+            <option value="hi">Hindi (हिन्दी)</option>
+            <option value="ne">Nepali (नेपाली)</option>
+          </select>
+        </div>
+
+        <!-- Offline Queue Information -->
+        <div class="card">
+          <h3>Offline Queue Status</h3>
+          <p style="font-size: 0.9rem; color: var(--slate-700); margin-bottom: var(--space-xs);">
+            Reports saved locally awaiting network reconnection:
+          </p>
+          <div style="font-size: 1.1rem; font-weight: 700; color: var(--forest-700);" id="offline-queue-count">
+            0 Queued Reports
+          </div>
+          <button id="btn-force-sync" class="button button--secondary" style="margin-top: var(--space-sm); width: fit-content;">
+            Force Synchronize Now
+          </button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script type="module" src="js/pages/settings.js"></script>
+</body>
+</html>

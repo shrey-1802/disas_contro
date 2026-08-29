@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emergency Alerts - DISISSTA Platform</title>
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/layout.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar" id="app-topbar"></header>
+    <nav class="sidebar" id="app-sidebar"></nav>
+
+    <main class="app-content">
+      <div id="alerts-critical-banner" class="alert-banner alert-banner--critical" style="margin-bottom: var(--space-md); display: none;">
+        <span>🛑 <strong>CRITICAL UNACKNOWLEDGED ALERT:</strong> <span id="alert-banner-msg">Convoy 14 stranded in Sector 6 landslide.</span></span>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md);">
+        <div>
+          <h1>Emergency Alert Command Inbox</h1>
+          <p style="color: var(--slate-700);">Operational incident warnings, convoy disruption alerts, and escalation actions.</p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom: var(--space-md); flex-direction: row; justify-content: space-between; align-items: center;">
+        <div style="display: flex; gap: var(--space-sm);">
+          <select id="severity-filter" style="width: 200px;">
+            <option value="ALL">All Severities</option>
+            <option value="CRITICAL">Critical Severity Only</option>
+            <option value="WARNING">Warning Tier</option>
+            <option value="ADVISORY">Advisory Tier</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="alerts-list-container" style="display: flex; flex-direction: column; gap: var(--space-sm);">
+        <!-- Injected by alerts.js -->
+      </div>
+    </main>
+  </div>
+
+  <script type="module" src="js/pages/alerts.js"></script>
+</body>
+</html>

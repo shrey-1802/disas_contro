@@ -1,0 +1,147 @@
+/* FRONTEND BASE STYLES & RESETS */
+@import url('tokens.css');
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 14px; /* Desktop default */
+  font-family: var(--font-sans);
+  background-color: var(--bg-honeydew);
+  color: var(--slate-800);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Field Tablet Mode Base Scale */
+body.field-mode, html.field-mode {
+  font-size: 16px;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-honeydew);
+  color: var(--slate-800);
+}
+
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--slate-800);
+  font-weight: 700;
+  line-height: 1.25;
+  margin-bottom: var(--space-xs);
+}
+
+h1 { font-size: 1.75rem; letter-spacing: -0.02em; }
+h2 { font-size: 1.35rem; letter-spacing: -0.01em; }
+h3 { font-size: 1.15rem; }
+h4 { font-size: 1.00rem; }
+
+p {
+  margin-bottom: var(--space-xs);
+}
+
+a {
+  color: var(--forest-600);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+a:hover {
+  color: var(--forest-700);
+}
+
+/* Buttons Reset */
+button {
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  border: none;
+  background: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  border-radius: var(--radius);
+  transition: all var(--transition-fast);
+}
+
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 3px solid var(--forest-600);
+  outline-offset: 2px;
+}
+
+/* Form Controls Reset */
+input, select, textarea {
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  color: var(--slate-800);
+  background-color: var(--white);
+  border: 1px solid var(--slate-600);
+  border-radius: var(--radius);
+  padding: var(--space-xs) var(--space-sm);
+  width: 100%;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--forest-600);
+}
+
+/* Table Defaults */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+th, td {
+  padding: var(--space-xs) var(--space-sm);
+  text-align: left;
+  vertical-align: middle;
+}
+
+th {
+  background-color: var(--slate-800);
+  color: var(--white);
+  font-weight: 600;
+}
+
+tr:nth-child(even) {
+  background-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Utility classes for Phase 21 Visual Hierarchy */
+.hier-critical {
+  border-left: 4px solid var(--slate-800) !important;
+  background-color: var(--slate-100) !important;
+}
+
+.hier-situation {
+  border-left: 3px solid var(--forest-600) !important;
+}
+
+.hier-supporting {
+  border-left: 2px solid var(--sage-500) !important;
+}
+
+.hier-context {
+  opacity: 0.85;
+}
+
+/* Accessibility SR only */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

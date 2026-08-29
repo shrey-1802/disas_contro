@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hazard Log - DISISSTA Platform</title>
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/layout.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar" id="app-topbar"></header>
+    <nav class="sidebar" id="app-sidebar"></nav>
+
+    <main class="app-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md);">
+        <div>
+          <h1>Hazard & Incident Log</h1>
+          <p style="color: var(--slate-700);">Ground field reports, sensor telemetry, and incident verification workflow.</p>
+        </div>
+        <button id="btn-open-report-modal" class="button button--primary">+ Submit Field Hazard Report</button>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 340px; gap: var(--space-md);">
+        <!-- Feed Column -->
+        <div>
+          <div class="card" style="margin-bottom: var(--space-md); flex-direction: row; align-items: center; justify-content: space-between;">
+            <input type="text" id="hazard-search" placeholder="Search by hazard type or sector..." style="width: 260px;">
+            <select id="source-filter" style="width: 180px;">
+              <option value="ALL">All Sources</option>
+              <option value="Field Report">Field Driver Report</option>
+              <option value="Sensor">Sensor Telemetry</option>
+              <option value="Satellite">Satellite Imagery</option>
+            </select>
+          </div>
+
+          <div id="hazards-timeline-container" style="display: flex; flex-direction: column; gap: var(--space-sm);">
+            <!-- Injected by hazardLog.js -->
+          </div>
+        </div>
+
+        <!-- Sidebar Column: Field Report Form -->
+        <div>
+          <div class="card">
+            <h3>Field Hazard Report Form</h3>
+            <p style="font-size: 0.85rem; color: var(--slate-700); margin-bottom: var(--space-sm);">Submits ground observations to command. Works offline.</p>
+            
+            <form id="field-report-form">
+              <div style="margin-bottom: var(--space-xs);">
+                <label style="display: block; font-weight: 600; font-size: 0.85rem;">Hazard Type</label>
+                <select id="rep-type" required>
+                  <option value="Debris Flow">Debris Flow / Landslide</option>
+                  <option value="Submerged Road">Submerged Intersection / Flood</option>
+                  <option value="Unsafe Bridge">Structural Bridge Damage</option>
+                </select>
+              </div>
+
+              <div style="margin-bottom: var(--space-xs);">
+                <label style="display: block; font-weight: 600; font-size: 0.85rem;">Flood Depth (meters)</label>
+                <input type="number" id="rep-depth" step="0.1" min="0" value="0.5">
+              </div>
+
+              <div style="margin-bottom: var(--space-xs);">
+                <label style="display: block; font-weight: 600; font-size: 0.85rem;">Sector / Location</label>
+                <input type="text" id="rep-region" required value="Sector 6 Arterial Link">
+              </div>
+
+              <div style="margin-bottom: var(--space-sm);">
+                <label style="display: block; font-weight: 600; font-size: 0.85rem;">Observation Notes</label>
+                <textarea id="rep-desc" rows="3" placeholder="Describe road condition..."></textarea>
+              </div>
+
+              <button type="submit" class="button button--primary" style="width: 100%;">Submit Field Report</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script type="module" src="js/pages/hazardLog.js"></script>
+</body>
+</html>

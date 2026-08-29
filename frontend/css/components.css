@@ -1,0 +1,297 @@
+/* FRONTEND REUSABLE COMPONENTS & 4-STATE OPERATIONAL STYLES */
+
+/* --- 1. STATUS BADGES (3 Tiers with explicit Icon + Label) --- */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+}
+
+.status-badge--safe {
+  background-color: var(--status-safe-bg);
+  color: var(--status-safe-color);
+  border-color: var(--status-safe-border);
+}
+
+.status-badge--caution {
+  background-color: var(--status-caution-bg);
+  color: var(--status-caution-color);
+  border-color: var(--status-caution-border);
+}
+
+.status-badge--blocked {
+  background-color: var(--status-blocked-bg);
+  color: var(--status-blocked-color);
+  border-color: var(--status-blocked-border);
+}
+
+/* --- 2. PRIORITY CHIPS --- */
+.priority-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.priority-chip--critical {
+  background-color: var(--slate-800);
+  color: var(--white);
+}
+.priority-chip--high {
+  background-color: var(--forest-600);
+  color: var(--white);
+}
+.priority-chip--medium {
+  background-color: var(--sage-500);
+  color: var(--slate-900);
+}
+.priority-chip--low {
+  background-color: var(--sage-100);
+  color: var(--slate-800);
+  border: 1px solid var(--sage-500);
+}
+
+/* --- 3. BUTTONS (4 Operational States) --- */
+.button {
+  padding: 8px 16px;
+  font-weight: 600;
+  border-radius: var(--radius);
+  min-height: 38px;
+}
+
+/* Primary */
+.button--primary {
+  background-color: var(--forest-600);
+  color: var(--white);
+  border: 1px solid var(--forest-700);
+}
+.button--primary:hover:not(:disabled) {
+  background-color: var(--forest-700);
+}
+
+/* Secondary */
+.button--secondary {
+  background-color: var(--sage-100);
+  color: var(--slate-800);
+  border: 1px solid var(--sage-500);
+}
+.button--secondary:hover:not(:disabled) {
+  background-color: var(--sage-200);
+}
+
+/* Critical Action */
+.button--critical {
+  background-color: var(--slate-800);
+  color: var(--white);
+  border: 1px solid var(--slate-900);
+}
+.button--critical:hover:not(:disabled) {
+  background-color: var(--slate-900);
+}
+
+/* Operational Warning State */
+.button--warning {
+  background-color: var(--status-caution-bg);
+  color: var(--status-caution-color);
+  border: 1px solid var(--status-caution-border);
+}
+
+/* Disabled */
+.button:disabled, .button--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Touch targets for Field Tablet Mode */
+body.field-mode .button, body.field-mode input, body.field-mode select {
+  min-height: 44px;
+  padding: 10px 18px;
+}
+
+/* --- 4. CARDS & CONTAINERS --- */
+.card {
+  background-color: var(--white);
+  border: 1px solid var(--sage-200);
+  border-radius: var(--radius);
+  padding: var(--space-md);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.card--warning {
+  border-color: var(--forest-600);
+  background-color: var(--sage-100);
+}
+
+.card--critical {
+  border: 2px solid var(--slate-800);
+  background-color: var(--slate-100);
+}
+
+/* --- 5. ALERT BANNERS --- */
+.alert-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius);
+  font-weight: 600;
+  gap: var(--space-md);
+}
+
+.alert-banner--critical {
+  background-color: var(--slate-800);
+  color: var(--white);
+}
+.alert-banner--warning {
+  background-color: var(--status-caution-bg);
+  color: var(--status-caution-color);
+  border: 1px solid var(--status-caution-border);
+}
+.alert-banner--advisory {
+  background-color: var(--status-safe-bg);
+  color: var(--status-safe-color);
+  border: 1px solid var(--status-safe-border);
+}
+
+/* --- 6. TOAST NOTIFICATIONS --- */
+.toast-container {
+  position: fixed;
+  bottom: var(--space-lg);
+  right: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  z-index: 9999;
+  max-width: 380px;
+}
+
+.toast {
+  background-color: var(--slate-800);
+  color: var(--white);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-xs);
+  animation: slideIn 200ms ease-out;
+}
+@keyframes slideIn {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* --- 7. CONNECTIVITY & SYNC INDICATORS --- */
+.connectivity-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.connectivity-indicator__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.connectivity-indicator--online .connectivity-indicator__dot {
+  background-color: var(--sage-500);
+}
+.connectivity-indicator--offline .connectivity-indicator__dot {
+  background-color: var(--slate-800);
+}
+
+.sync-indicator {
+  font-size: 0.82rem;
+  color: var(--slate-600);
+}
+
+/* --- 8. ROUTE DIFF COMPONENT --- */
+.route-diff {
+  background-color: var(--slate-100);
+  border: 1px solid var(--slate-200);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+}
+.route-diff__old {
+  text-decoration: line-through;
+  color: var(--slate-600);
+}
+.route-diff__new {
+  color: var(--forest-700);
+  font-weight: 700;
+}
+
+/* --- 9. MAP HAZARD POPOVER --- */
+.hazard-popover {
+  padding: var(--space-xs);
+  min-width: 200px;
+}
+.hazard-popover__title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin-bottom: 4px;
+}
+.hazard-popover__meta {
+  font-size: 0.8rem;
+  color: var(--slate-700);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 8px;
+}
+
+/* --- 10. MODAL & DRAWER --- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(39, 49, 56, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9000;
+}
+.modal-content {
+  background-color: var(--white);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  max-width: 540px;
+  width: 90%;
+  box-shadow: var(--shadow-lg);
+}
+
+/* --- 11. STATES: EMPTY, LOADING, ERROR --- */
+.state-container {
+  padding: var(--space-xl);
+  text-align: center;
+  background-color: var(--white);
+  border: 1px solid var(--sage-200);
+  border-radius: var(--radius);
+
+}
+.state-container__icon {
+  font-size: 2.5rem;
+  color: var(--slate-600);
+  margin-bottom: var(--space-xs);
+}
+.state-container__title {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+.state-container__desc {
+  font-size: 0.9rem;
+  color: var(--slate-700);
+}

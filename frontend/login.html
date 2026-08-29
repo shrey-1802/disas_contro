@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - DISISSTA Emergency Logistics Platform</title>
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <style>
+    .login-wrapper {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: var(--bg-honeydew);
+      padding: var(--space-md);
+    }
+    .login-card {
+      background-color: var(--white);
+      border: 1px solid var(--sage-500);
+      border-radius: var(--radius-lg);
+      padding: var(--space-xl);
+      width: 100%;
+      max-width: 440px;
+      box-shadow: var(--shadow-lg);
+    }
+    .login-header {
+      text-align: center;
+      margin-bottom: var(--space-lg);
+    }
+    .login-emblem {
+      width: 56px;
+      height: 56px;
+      background-color: var(--slate-800);
+      color: var(--white);
+      border-radius: var(--radius);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 1.5rem;
+      margin-bottom: var(--space-xs);
+    }
+  </style>
+</head>
+<body>
+  <div class="login-wrapper">
+    <main class="login-card">
+      <div class="login-header">
+        <div class="login-emblem">NDMA</div>
+        <h1>DISISSTA Command Access</h1>
+        <p style="font-size: 0.9rem; color: var(--slate-700);">Relief Supply Chain Resilience & Rerouting System</p>
+      </div>
+
+      <form id="login-form">
+        <div style="margin-bottom: var(--space-md);">
+          <label for="username" style="display: block; font-weight: 600; margin-bottom: 4px;">Operator Username / ID</label>
+          <input type="text" id="username" required placeholder="e.g. OP-4029" value="Operator-Alpha">
+        </div>
+
+        <div style="margin-bottom: var(--space-md);">
+          <label for="role-select" style="display: block; font-weight: 600; margin-bottom: 4px;">Operational Role</label>
+          <select id="role-select" required>
+            <option value="Control Room">Control Room Operator</option>
+            <option value="District Admin">District Admin Authority</option>
+            <option value="Field Driver">Field Convoy Driver</option>
+          </select>
+        </div>
+
+        <div style="margin-bottom: var(--space-md);">
+          <label for="password" style="display: block; font-weight: 600; margin-bottom: 4px;">Authorization Key</label>
+          <input type="password" id="password" required value="••••••••">
+        </div>
+
+        <div id="login-error" class="alert-banner alert-banner--warning" style="display: none; margin-bottom: var(--space-md);"></div>
+
+        <button type="submit" class="button button--primary" style="width: 100%;">Authorize System Access</button>
+      </form>
+    </main>
+  </div>
+
+  <script type="module">
+    import { Auth } from './js/auth.js';
+
+    document.getElementById('login-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const username = document.getElementById('username').value;
+      const role = document.getElementById('role-select').value;
+
+      if (!username || !role) {
+        const err = document.getElementById('login-error');
+        err.textContent = 'Please enter username and select operational role.';
+        err.style.display = 'flex';
+        return;
+      }
+
+      Auth.login(username, role);
+      window.location.href = Auth.getLandingPageForRole(role);
+    });
+  </script>
+</body>
+</html>

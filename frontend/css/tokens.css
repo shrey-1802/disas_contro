@@ -1,0 +1,61 @@
+/* FRONTEND DESIGN SYSTEM TOKENS - SINGLE SOURCE OF TRUTH */
+:root {
+  /* Approved Government Emergency Operations Palette */
+  --bg-honeydew: #EDF3E0;
+  --sage-500: #8FAF8C;
+  --forest-600: #5A7A68;
+  --forest-700: #4A6656;
+  --sage-100: #E4EBE0;
+  --sage-200: #CBDBC7;
+  --sage-700: #3D5A3A;
+  --slate-800: #3A4750;
+  --slate-900: #273138;
+  --slate-700: #485762;
+  --slate-600: #5C6E7C;
+  --slate-200: #D8E0E5;
+  --slate-100: #EFF3F5;
+  --white: #FFFFFF;
+
+  /* Operational Status Semantic Mapping */
+  --status-safe-bg: #E4EBE0;
+  --status-safe-color: #3D5A3A;
+  --status-safe-border: #8FAF8C;
+
+  --status-caution-bg: #DCE7E1;
+  --status-caution-color: #314E3F;
+  --status-caution-border: #5A7A68;
+
+  --status-blocked-bg: #D9E1E6;
+  --status-blocked-color: #273138;
+  --status-blocked-border: #3A4750;
+
+  /* Typography */
+  --font-sans: 'Inter', 'IBM Plex Sans', 'Noto Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'IBM Plex Mono', SFMono-Regular, Consolas, monospace;
+
+  /* Spacing */
+  --space-2xs: 4px;
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+
+  /* Borders & Radius */
+  --radius-sm: 4px;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --border-subtle: 1px solid var(--sage-200);
+  --border-medium: 1px solid var(--sage-500);
+  --border-slate: 1px solid var(--slate-800);
+
+  /* Elevation (Restrained - Institutional feel) */
+  --shadow-sm: 0 1px 3px rgba(58, 71, 80, 0.08);
+  --shadow-md: 0 4px 8px rgba(58, 71, 80, 0.12);
+  --shadow-lg: 0 8px 16px rgba(58, 71, 80, 0.16);
+
+  /* Transitions */
+  --transition-fast: 150ms ease-in-out;
+  --transition-normal: 250ms ease-in-out;
+}

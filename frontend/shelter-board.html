@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shelter Board - DISISSTA Platform</title>
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/layout.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar" id="app-topbar"></header>
+    <nav class="sidebar" id="app-sidebar"></nav>
+
+    <main class="app-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md);">
+        <div>
+          <h1>Shelter Supply & Demand Board</h1>
+          <p style="color: var(--slate-700);">Monitor shelter population, supply urgency tiers, isolation risk, and incoming relief.</p>
+        </div>
+      </div>
+
+      <!-- Controls & Filter Bar -->
+      <div class="card" style="flex-direction: row; align-items: center; justify-content: space-between;">
+        <div style="display: flex; gap: var(--space-sm); align-items: center;">
+          <input type="text" id="shelter-search" placeholder="Search Shelter Name or Region..." style="width: 260px;">
+          <select id="urgency-filter" style="width: 180px;">
+            <option value="ALL">All Urgency Tiers</option>
+            <option value="CRITICAL">Critical (≤ 2 Days Supply)</option>
+            <option value="WARNING">Warning (3-5 Days Supply)</option>
+            <option value="NORMAL">Normal (> 5 Days Supply)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Shelter Cards Grid -->
+      <div id="shelter-cards-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: var(--space-md);">
+        <!-- Injected dynamically by shelterBoard.js -->
+      </div>
+    </main>
+  </div>
+
+  <script type="module" src="js/pages/shelterBoard.js"></script>
+</body>
+</html>

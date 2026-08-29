@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Convoy Dispatch - DISISSTA Platform</title>
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/layout.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar" id="app-topbar"></header>
+    <nav class="sidebar" id="app-sidebar"></nav>
+
+    <main class="app-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-md);">
+        <div>
+          <h1>Convoy Dispatch & Route Tracking</h1>
+          <p style="color: var(--slate-700);">Monitor relief missions, cargo urgency priority, and route recalculations.</p>
+        </div>
+        <button id="btn-create-mission" class="button button--primary">+ Dispatch New Convoy</button>
+      </div>
+
+      <!-- Filter & Bulk Action Bar -->
+      <div class="card" style="flex-direction: row; align-items: center; justify-content: space-between;">
+        <div style="display: flex; gap: var(--space-sm); align-items: center;">
+          <input type="text" id="dispatch-search" placeholder="Filter by Convoy ID, Cargo, Driver..." style="width: 260px;">
+          <select id="priority-filter" style="width: 180px;">
+            <option value="ALL">All Cargo Priorities</option>
+            <option value="Critical">Critical (Insulin/Blood)</option>
+            <option value="High">High (Infant Nutrition)</option>
+            <option value="Medium">Medium (Potable Water)</option>
+            <option value="Low">Low (General Relief)</option>
+          </select>
+        </div>
+
+        <button id="btn-bulk-reroute" class="button button--secondary" disabled>Bulk Action (Selected: 0)</button>
+      </div>
+
+      <!-- Missions Data Table -->
+      <div class="card" style="padding: 0; overflow-x: auto;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width: 40px;"><input type="checkbox" id="select-all-convoys"></th>
+              <th>Convoy ID</th>
+              <th>Cargo & Priority</th>
+              <th>Origin Hub</th>
+              <th>Destination Shelter</th>
+              <th>Route Status</th>
+              <th>ETA</th>
+              <th>Driver Contact</th>
+              <th>Route Diff</th>
+            </tr>
+          </thead>
+          <tbody id="missions-table-body">
+            <!-- Injected by convoyDispatch.js -->
+          </tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <script type="module" src="js/pages/convoyDispatch.js"></script>
+</body>
+</html>
