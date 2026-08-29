@@ -81,24 +81,7 @@
     </main>
   </div>
 
-  <script type="module">
-    import { Auth } from './js/auth.js';
-
-    document.getElementById('login-form').addEventListener('submit', (e) => {
-      e.preventDefault();
-      const username = document.getElementById('username').value;
-      const role = document.getElementById('role-select').value;
-
-      if (!username || !role) {
-        const err = document.getElementById('login-error');
-        err.textContent = 'Please enter username and select operational role.';
-        err.style.display = 'flex';
-        return;
-      }
-
-      Auth.login(username, role);
-      window.location.href = Auth.getLandingPageForRole(role);
-    });
-  </script>
+  <script type="module" src="js/pages/login.js"></script>
 </body>
 </html>
+

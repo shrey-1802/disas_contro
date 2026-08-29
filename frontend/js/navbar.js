@@ -162,3 +162,14 @@ export function renderCriticalAlertBanner(alertData) {
     bannerElem.style.display = 'none';
   }
 }
+
+export const Navbar = {
+  render(page) {
+    const pageFile = page ? (page.endsWith('.html') ? page : `${page}.html`) : 'dashboard.html';
+    renderGlobalShell(pageFile);
+  },
+  renderGlobalShell,
+  renderCriticalAlertBanner
+};
+
+export default Navbar;

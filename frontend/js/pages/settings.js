@@ -1,6 +1,16 @@
 /* Settings Page Controller */
 
+import { renderGlobalShell } from '../navbar.js';
+import { api } from '../api.js';
+import { auth } from '../auth.js';
+import { socketService } from '../socket.js';
+import { toast } from '../toast.js';
+import { FreshnessUtil } from '../freshness.js';
+import { SyncManager } from '../sync.js';
+
 document.addEventListener('DOMContentLoaded', () => {
+  renderGlobalShell('settings.html');
+
   // Load DOM elements
   const usernameInput = document.getElementById('setting-username');
   const roleSelect = document.getElementById('setting-role');
@@ -14,12 +24,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const pendingActionsCount = document.getElementById('pending-actions-count');
 
   // Load initial states from localStorage
-  if (usernameInput) usernameInput.value = localStorage.getItem('username') || 'John Doe';
-  if (roleSelect) roleSelect.value = localStorage.getItem('user-role') || 'control_room';
-  if (fieldModeToggle) fieldModeToggle.checked = localStorage.getItem('field-mode') === 'true';
+  if (usernameInput) usernameInput.value = localStorage.getItem('username') || auth.getUser().username || 'Operator-Alpha';
+  if (roleSelect) roleSelect.value = localStorage.getItem('user-role') || auth.getRole() || 'Control Room';
+  if (fieldModeToggle) fieldModeToggle.checked = auth.isFieldMode();
   if (simulateOfflineToggle) simulateOfflineToggle.checked = localStorage.getItem('simulated-offline') === 'true';
   if (languageSelect) languageSelect.value = localStorage.getItem('language') || 'en';
   if (fontScaleSelect) fontScaleSelect.value = localStorage.getItem('font-scale') || 'standard';
+
 
   // Load initial IndexedDB pending queue stats
   if (window.SyncManager) {

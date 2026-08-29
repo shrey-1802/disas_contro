@@ -27,7 +27,13 @@ class ToastService {
         toast.parentNode.removeChild(toast);
       }
     }, duration);
-  }
+  info(msg) { this.show(msg, 'info'); }
+  success(msg) { this.show(msg, 'success'); }
+  warning(msg) { this.show(msg, 'warning'); }
+  error(msg) { this.show(msg, 'error'); }
+  critical(msg) { this.show(msg, 'critical'); }
 }
 
 export const Toast = new ToastService();
+export const toast = Toast;
+export default Toast;

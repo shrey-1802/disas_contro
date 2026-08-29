@@ -91,6 +91,11 @@ export const ApiService = {
     return res;
   },
 
+  async getVehicles() {
+    const res = await request('/api/vehicles');
+    return res;
+  },
+
   async getReports() {
     const res = await request('/api/reports');
     if (res.status === API_STATUS.SUCCESS && Array.isArray(res.data)) {
@@ -133,3 +138,7 @@ export const ApiService = {
     return await request(`/api/alerts/${id}/escalate`, { method: 'PATCH' });
   }
 };
+
+export const api = ApiService;
+export default ApiService;
+

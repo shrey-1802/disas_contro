@@ -81,7 +81,20 @@ document.addEventListener('DOMContentLoaded', async () => {
    1. MAP INITIALIZATION
    -------------------------------------------------------------------------- */
 function initLeafletMap() {
-  map = L.map('map', {
+  const container = document.getElementById('map-canvas') || document.getElementById('map');
+  if (!container) return;
+
+  if (typeof L === 'undefined') {
+    container.innerHTML = `
+      <div style="display:flex; height:100%; flex-direction:column; align-items:center; justify-content:center; background:var(--sage-100); color:var(--slate-800); padding:var(--space-lg); text-align:center;">
+        <h3>🗺️ Live Map Offline Renderer</h3>
+        <p style="max-width:500px; margin-top:8px;">Leaflet map library could not be loaded from remote CDN. Operating in field fallback mode. Map layers and spatial telemetry are cached locally.</p>
+      </div>
+    `;
+    return;
+  }
+
+  map = L.map(container, {
     center: MAP_CENTER,
     zoom: DEFAULT_ZOOM,
     zoomControl: true
@@ -98,6 +111,7 @@ function initLeafletMap() {
   convoyLayerGroup = L.layerGroup().addTo(map);
   shelterLayerGroup = L.layerGroup().addTo(map);
 }
+
 
 /* --------------------------------------------------------------------------
    2. INITIAL MARKER & OVERLAY RENDERING

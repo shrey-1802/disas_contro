@@ -25,3 +25,6 @@ export function createStatusBadge(tierInput) {
 
   return badge;
 }
+
+export const renderStatusBadge = createStatusBadge;
+export default createStatusBadge;
