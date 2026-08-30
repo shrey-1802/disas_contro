@@ -1,36 +1,75 @@
-version: '3.8'
+version: '3.9'
 
 services:
+  db:
+    image: mysql:8.0
+    container_name: relief_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: relief_supply_chain
+      MYSQL_USER: relief_user
+      MYSQL_PASSWORD: relief_password_123
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backend/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+      interval: 10s
+    networks:
+      - relief_network
+
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: disista-backend
-    restart: always
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: relief_backend
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: "mysql://relief_user:relief_password_123@db:3306/relief_supply_chain"
+      JWT_SECRET: ${JWT_SECRET:-disaster_relief_jwt_secret_production_key_2026}
+      CORS_ORIGIN: "http://localhost:8080,http://localhost:3000"
+      GRAPHHOPPER_API_KEY: ${GRAPHHOPPER_API_KEY:-}
     ports:
       - "3000:3000"
-    environment:
-      - NODE_ENV=production
-      - PORT=3000
-      - DATABASE_URL=${DATABASE_URL:-mysql://21oR7kYsZBTwtTx.root:6Mku0PHqSvdMi4hD@gateway01.ap-southeast-1.prod.aws.tidbcloud.com:4000/test?sslaccept=strict}
-      - JWT_SECRET=${JWT_SECRET:-disista_super_secret_jwt_key_2026}
-      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:8080,https://localhost:8080}
+    depends_on:
+      db:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/v1/health"]
-      interval: 30s
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/v1/health"]
       timeout: 10s
-      retries: 3
+      retries: 5
+      interval: 10s
+    networks:
+      - relief_network
+    restart: unless-stopped
 
   frontend:
     build:
       context: .
-      dockerfile: Dockerfile
-    container_name: disista-frontend
-    restart: always
+      dockerfile: frontend/Dockerfile
+    container_name: relief_frontend
+    environment:
+      PORT: 8080
+      API_BASE_URL: "http://localhost:3000/api/v1"
+      SOCKET_URL: "http://localhost:3000"
+      ENABLE_QUICK_LOGIN: "false"
     ports:
       - "8080:8080"
-    environment:
-      - NODE_ENV=production
-      - PORT=8080
     depends_on:
       - backend
+    networks:
+      - relief_network
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  relief_network:
+    driver: bridge
