@@ -6,6 +6,7 @@
 class OfflineSyncQueue {
   #STORAGE_KEY = 'disista_offline_queue';
   #flushInterval = null;
+  #sendFn = null;
 
   constructor() {
     this.queue = this.#load();
