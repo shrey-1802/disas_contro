@@ -751,6 +751,33 @@ button, a, [role="button"] { touch-action: manipulation; }
 
 #offline-banner { font-family: var(--font-sans); }
 
+/* ------------------------------------------
+   13. MODAL OVERLAYS & DIALOG CARDS
+   ------------------------------------------ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(58, 71, 80, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-overlay.hidden {
+  display: none !important;
+}
+
+.modal-card {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  width: min(560px, 92vw);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-hairline);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, ::before, ::after {
     animation-duration: 0.01ms !important;
@@ -759,3 +786,4 @@ button, a, [role="button"] { touch-action: manipulation; }
     scroll-behavior: auto !important;
   }
 }
+

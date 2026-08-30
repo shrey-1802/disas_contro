@@ -9,6 +9,7 @@ class ShelterBoardManager {
   }
 
   init() {
+    this.bindSearchInput();
     this.render();
     if (window.store) {
       window.store.subscribe(() => this.render());
@@ -17,6 +18,100 @@ class ShelterBoardManager {
       window.socket.on('shelter:demand_update', () => this.render());
       window.socket.on('route:recalculated', () => this.render());
     }
+  }
+
+  bindSearchInput() {
+    const searchInput = document.getElementById('shelter-search-input');
+    if (searchInput) {
+      searchInput.addEventListener('input', () => this.render());
+    }
+  }
+
+  applyFilters() {
+    this.render();
+  }
+
+  resetFilters() {
+    const urgencyFilterEl = document.getElementById('filter-urgency');
+    const shortageFilterEl = document.getElementById('filter-shortage');
+    const searchInput = document.getElementById('shelter-search-input');
+
+    if (urgencyFilterEl) urgencyFilterEl.value = 'ALL';
+    if (shortageFilterEl) shortageFilterEl.value = 'ALL';
+    if (searchInput) searchInput.value = '';
+
+    this.render();
+  }
+
+  openRequestModal() {
+    const modal = document.getElementById('rebalance-modal');
+    if (!modal) return;
+
+    // Populate shelter select dynamically from store
+    const selectEl = document.getElementById('rebalance-shelter-select');
+    if (selectEl && window.store) {
+      const shelters = window.store.getShelters();
+      if (shelters.length > 0) {
+        selectEl.innerHTML = shelters.map(s => {
+          const tier = s.isolated ? 'ISOLATED' : (s.daysSupply < 1.5 ? 'Critical' : (s.daysSupply <= 3.0 ? 'Caution' : 'Safe'));
+          return `<option value="${s.id}">${s.name} — ${tier} (${s.daysSupply} Days Cover)</option>`;
+        }).join('');
+      }
+    }
+
+    modal.classList.remove('hidden');
+    if (window.A11yUtil && typeof window.A11yUtil.trapFocus === 'function') {
+      window.A11yUtil.trapFocus(modal);
+    }
+  }
+
+  closeRequestModal() {
+    const modal = document.getElementById('rebalance-modal');
+    if (!modal) return;
+    modal.classList.add('hidden');
+  }
+
+  handleRebalanceSubmit(e) {
+    e.preventDefault();
+    const shelterId = document.getElementById('rebalance-shelter-select')?.value;
+    const category = document.getElementById('rebalance-category')?.value;
+    const qty = document.getElementById('rebalance-qty')?.value.trim();
+
+    if (!shelterId || !category || !qty) return;
+
+    const shelters = window.store ? window.store.getShelters() : [];
+    const shelter = shelters.find(s => s.id === shelterId);
+    const shelterName = shelter ? shelter.name : shelterId;
+
+    if (window.store) {
+      window.store.addTransfer({
+        id: `txfr-${Date.now().toString().slice(-3)}`,
+        from: 'Control Room Rebalance Request',
+        to: shelterName,
+        cargo: category,
+        cargoType: category,
+        qty: qty,
+        coldChain: category.includes('Insulin') || category.includes('Cold-Chain'),
+        currentStage: 0,
+        convoy: 'Unassigned',
+        started: 'Pending',
+        eta: 'Pending',
+        status: 'Active',
+        priority: 'critical',
+        createdAt: Date.now()
+      });
+    }
+
+    if (window.toast) {
+      window.toast.success(`Emergency rebalancing request submitted for ${shelterName}!`);
+    }
+
+    if (window.A11yUtil && typeof window.A11yUtil.announce === 'function') {
+      window.A11yUtil.announce(`Emergency rebalancing request submitted for ${shelterName}.`);
+    }
+
+    this.closeRequestModal();
+    this.render();
   }
 
   getFilteredShelters() {
@@ -39,7 +134,26 @@ class ShelterBoardManager {
 
     const shortageFilterEl = document.getElementById('filter-shortage');
     if (shortageFilterEl && shortageFilterEl.value !== 'ALL') {
-      list = list.filter(s => s.shortageType === shortageFilterEl.value);
+      const val = shortageFilterEl.value.toLowerCase();
+      list = list.filter(s => {
+        if (s.shortageType && s.shortageType.toLowerCase() === val) return true;
+        if (s.inventory) {
+          return Object.keys(s.inventory).some(k => k.toLowerCase().includes(val));
+        }
+        return false;
+      });
+    }
+
+    const searchInput = document.getElementById('shelter-search-input');
+    if (searchInput && searchInput.value.trim()) {
+      const q = searchInput.value.trim().toLowerCase();
+      list = list.filter(s => {
+        const nameMatch = s.name && s.name.toLowerCase().includes(q);
+        const districtMatch = s.district && s.district.toLowerCase().includes(q);
+        const typeMatch = s.shortageType && s.shortageType.toLowerCase().includes(q);
+        const invMatch = s.inventory && Object.values(s.inventory).some(v => String(v).toLowerCase().includes(q));
+        return nameMatch || districtMatch || typeMatch || invMatch;
+      });
     }
 
     // Sort: Isolated first, then lowest days of supply
@@ -51,10 +165,25 @@ class ShelterBoardManager {
     return list;
   }
 
+  updateMetrics() {
+    const allShelters = window.store ? window.store.getShelters() : [];
+
+    const totalEl = document.getElementById('metric-shelters-count');
+    const isolatedEl = document.getElementById('metric-isolated-count');
+    const criticalEl = document.getElementById('metric-critical-count');
+    const safeEl = document.getElementById('metric-safe-count');
+
+    if (totalEl) totalEl.innerText = allShelters.length;
+    if (isolatedEl) isolatedEl.innerText = allShelters.filter(s => s.isolated).length;
+    if (criticalEl) criticalEl.innerText = allShelters.filter(s => s.daysSupply < 1.5).length;
+    if (safeEl) safeEl.innerText = allShelters.filter(s => s.daysSupply > 3.0).length;
+  }
+
   render() {
+    this.updateMetrics();
+
     const container = document.getElementById('shelter-grid') || document.getElementById('shelter-cards-container');
     if (!container) return;
-
 
     const list = this.getFilteredShelters();
     container.innerHTML = '';
@@ -73,8 +202,7 @@ class ShelterBoardManager {
       const badgeText = isIsolated ? '❖ ISOLATED (NO ROAD ACCESS)' : (isCritical ? 'CRITICAL SHORTAGE' : `${s.daysSupply} DAYS COVER`);
 
       const card = document.createElement('div');
-      card.className = `card ${isIsolated ? 'critical' : (isCritical ? 'critical' : '')}`;
-      card.style.cssText = `background: var(--white); ${isIsolated ? 'border: 2px solid var(--slate-800);' : ''}`;
+      card.className = `card shelter-card ${isIsolated ? 'isolated-card' : (isCritical ? 'critical' : '')}`;
       card.innerHTML = `
         <div class="card-header">
           <div>
@@ -142,3 +270,4 @@ document.addEventListener('DOMContentLoaded', () => {
   window.shelterBoard = new ShelterBoardManager();
   window.shelterBoard.init();
 });
+
