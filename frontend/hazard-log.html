@@ -9,25 +9,46 @@
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/components.css">
+
+  <style>
+    .hazard-layout-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.1fr;
+      gap: var(--space-5);
+      margin-bottom: var(--space-6);
+    }
+    @media (max-width: 900px) {
+      .hazard-layout-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
 <body>
 
   <main class="page-main" id="main-content">
     <div class="container" style="margin-top: var(--space-5);">
-      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-5);">
+      <!-- HEADER -->
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-5); flex-wrap: wrap; gap: var(--space-3);">
         <div>
           <span class="panel-label">FIELD INCIDENT REPORTING</span>
-          <h2>Hazard Observation Log & Field Reports</h2>
+          <h1 style="margin-top: 2px;">Hazard Observation Log & Field Reports</h1>
         </div>
-        <span class="badge badge-safe">Field Ops Active</span>
+        <span class="badge badge-safe">
+          <svg class="badge-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+          Field Ops Active
+        </span>
       </div>
 
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-5);">
+      <div class="hazard-layout-grid">
         <!-- FIELD DRIVER REPORT FORM -->
         <div class="card">
           <div class="card-header">
             <span class="card-title">⚠️ Submit Field Hazard Report</span>
-            <span class="badge badge-caution">Auto-GPS Geolocated</span>
+            <span class="badge badge-caution">
+              <svg class="badge-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+              Auto-GPS Geolocated
+            </span>
           </div>
 
           <form onsubmit="hazardLog.handleHazardSubmit(event)">
@@ -54,12 +75,12 @@
               </select>
             </div>
 
-            <div class="form-group">
+            <div class="form-group" style="margin-bottom: var(--space-5);">
               <label class="form-label" for="hazard-desc">Observation Details</label>
               <textarea class="form-control" id="hazard-desc" rows="3" placeholder="Describe water depth, vehicle clearance limitations, or visible damage..."></textarea>
             </div>
 
-            <button type="submit" class="btn btn-primary" style="width: 100%; min-height: 48px;">
+            <button type="submit" class="btn btn-primary" style="width: 100%; min-height: 48px; font-size: var(--text-base);">
               ⚡ SUBMIT FIELD REPORT TO CONTROL ROOM →
             </button>
           </form>
@@ -79,6 +100,20 @@
       </div>
     </div>
   </main>
+
+  <!-- FOOTER -->
+  <footer class="app-footer">
+    <div>
+      <strong>DISISTA CONTROL</strong> v2.4 — Emergency Relief Supply Chain Resilience
+    </div>
+    <div style="display: flex; gap: var(--space-4);">
+      <span class="badge badge-safe">
+        <svg class="badge-icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+        4-Hue Palette System
+      </span>
+      <span>♿ WCAG AA</span>
+    </div>
+  </footer>
 
   <script src="js/auth.js"></script>
   <script src="js/statusBadge.js"></script>

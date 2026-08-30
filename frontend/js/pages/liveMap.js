@@ -28,10 +28,10 @@ class LiveMapManager {
 
     L.control.zoom({ position: 'bottomright' }).addTo(this.map);
 
-    // CartoDB Positron Basemap
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; DISISTA CONTROL — Relief Intelligence',
-      maxZoom: 18
+    // Free OpenStreetMap Tiles (Clean, No API Key Required)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | DISISTA CONTROL',
+      maxZoom: 19
     }).addTo(this.map);
 
     // Add Layer Groups to Map
@@ -77,20 +77,21 @@ class LiveMapManager {
       [14.628, 121.005],
       [14.615, 120.985]
     ], {
-      color: '#5A7A68',
+      color: '#4A6656',
       fillColor: '#8FAF8C',
-      fillOpacity: 0.25,
-      weight: 2,
+      fillOpacity: 0.28,
+      weight: 2.5,
       dashArray: '6, 6'
     });
 
-    // Time-to-block badge marker
+    // Time-to-block badge marker with animated beacon
     const labelIcon = L.divIcon({
-      html: `<div style="background: rgba(90, 122, 104, 0.9); color: #FFF; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; border: 1px dashed #FFF; white-space: nowrap;">
-               △ Forecast: ~25 min to Block
+      html: `<div style="background: var(--slate-800); color: var(--white); padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; border: 1px solid var(--sage-500); white-space: nowrap; box-shadow: 0 4px 12px rgba(58, 71, 80, 0.3); display: flex; align-items: center; gap: 6px;">
+               <span class="network-pulse"></span>
+               <span>△ Forecast: ~25m to Impassable Block</span>
              </div>`,
       className: 'flood-forecast-badge',
-      iconAnchor: [50, 10]
+      iconAnchor: [60, 12]
     });
 
     const labelMarker = L.marker([14.625, 120.990], { icon: labelIcon });
@@ -116,15 +117,15 @@ class LiveMapManager {
       const dashoffset = circumference - ((h.confidence || 80) / 100) * circumference;
 
       const svgHtml = `
-        <div style="position: relative; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;">
-          <svg width="36" height="36" viewBox="0 0 36 36" style="position: absolute; top:0; left:0;">
-            <circle cx="18" cy="18" r="15" fill="none" stroke="rgba(0,0,0,0.15)" stroke-width="3"/>
-            <circle cx="18" cy="18" r="15" fill="none" stroke="${strokeColor}" stroke-width="3"
-                    stroke-dasharray="${strokeStyle === 'none' ? circumference : '4 3'}"
+        <div style="position: relative; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+          <svg width="40" height="40" viewBox="0 0 40 40" style="position: absolute; top:0; left:0;">
+            <circle cx="20" cy="20" r="16" fill="none" stroke="rgba(58, 71, 80, 0.2)" stroke-width="3.5"/>
+            <circle cx="20" cy="20" r="16" fill="none" stroke="${strokeColor}" stroke-width="3.5"
+                    stroke-dasharray="${strokeStyle === 'none' ? circumference : '5 3'}"
                     stroke-dashoffset="${strokeStyle === 'none' ? dashoffset : 0}"
-                    transform="rotate(-90 18 18)" stroke-linecap="round"/>
+                    transform="rotate(-90 20 20)" stroke-linecap="round"/>
           </svg>
-          <div style="width: 22px; height: 22px; background: ${strokeColor}; color: #FFF; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold;">
+          <div style="width: 24px; height: 24px; background: ${strokeColor}; color: #FFF; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; box-shadow: 0 2px 8px rgba(0,0,0,0.25);">
             ${iconShape}
           </div>
         </div>
@@ -133,8 +134,8 @@ class LiveMapManager {
       const customIcon = L.divIcon({
         html: svgHtml,
         className: 'hazard-custom-marker',
-        iconSize: [36, 36],
-        iconAnchor: [18, 18]
+        iconSize: [40, 40],
+        iconAnchor: [20, 20]
       });
 
       const marker = L.marker([h.lat, h.lng], { icon: customIcon });
@@ -149,26 +150,27 @@ class LiveMapManager {
     const convoysData = window.store ? window.store.getConvoys() : [];
 
     convoysData.forEach(c => {
-      const routeColor = c.status === 'Stranded' ? '#3A4750' : (c.status === 'Rerouted' ? '#5A7A68' : '#8FAF8C');
+      const routeColor = c.status === 'Stranded' ? '#3A4750' : (c.status === 'Rerouted' ? '#5A7A68' : '#4A6656');
       const lineStyle = c.status === 'Rerouted' ? '6, 6' : 'none';
 
       if (c.route) {
         const polyline = L.polyline(c.route, {
           color: routeColor,
-          weight: 4,
+          weight: 4.5,
           dashArray: lineStyle,
-          opacity: 0.8
+          opacity: 0.85
         });
         this.layers.routes.addLayer(polyline);
       }
 
       const arrowIcon = L.divIcon({
-        html: `<div style="background: ${routeColor}; color: #FFF; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; border: 1px solid #FFF; white-space: nowrap;">
-                 🚛 ${c.name} (${c.status})
+        html: `<div style="background: ${routeColor}; color: #FFF; padding: 5px 10px; border-radius: 16px; font-size: 11px; font-weight: 700; border: 1.5px solid #FFF; white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,0.25); display: flex; align-items: center; gap: 4px;">
+                 <span>🚛</span>
+                 <span>${c.name} (${c.status})</span>
                </div>`,
         className: 'convoy-marker',
-        iconSize: [100, 24],
-        iconAnchor: [50, 12]
+        iconSize: [120, 28],
+        iconAnchor: [60, 14]
       });
 
       const marker = L.marker([c.lat, c.lng], { icon: arrowIcon });
@@ -184,11 +186,11 @@ class LiveMapManager {
     sheltersData.forEach(s => {
       const color = s.isolated || s.urgency === 'critical' ? '#3A4750' : '#5A7A68';
       const icon = L.divIcon({
-        html: `<div style="background: ${color}; color: #FFF; padding: 4px 6px; border-radius: 6px; font-size: 11px; font-weight: bold; border: 1px solid #FFF;">
+        html: `<div style="background: ${color}; color: #FFF; padding: 5px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; border: 1.5px solid #FFF; box-shadow: 0 4px 12px rgba(0,0,0,0.25);">
                  🏛️ ${s.name} ${s.isolated ? '⚠️ [ISOLATED]' : ''}
                </div>`,
         className: 'shelter-marker',
-        iconAnchor: [40, 12]
+        iconAnchor: [45, 14]
       });
       const marker = L.marker([s.lat, s.lng], { icon });
       marker.on('click', () => this.inspectEntity('shelter', s));
@@ -202,11 +204,11 @@ class LiveMapManager {
 
     warehousesData.forEach(w => {
       const icon = L.divIcon({
-        html: `<div style="background: #4A6656; color: #FFF; padding: 4px 6px; border-radius: 6px; font-size: 11px; font-weight: bold; border: 1px solid #FFF;">
+        html: `<div style="background: #4A6656; color: #FFF; padding: 5px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; border: 1.5px solid #FFF; box-shadow: 0 4px 12px rgba(0,0,0,0.25);">
                  📦 ${w.name}
                </div>`,
         className: 'wh-marker',
-        iconAnchor: [40, 12]
+        iconAnchor: [45, 14]
       });
       const marker = L.marker([w.lat, w.lng], { icon });
       marker.on('click', () => this.inspectEntity('warehouse', w));
@@ -245,11 +247,11 @@ class LiveMapManager {
     const lngStr = e.latlng.lng.toFixed(4);
 
     const popupHtml = `
-      <div style="font-size: 13px; font-family: var(--font-sans);">
-        <strong>Map Location Selected</strong><br>
+      <div style="font-size: 13px; font-family: var(--font-sans); padding: 4px;">
+        <strong style="color: var(--slate-800); font-size: 14px;">Map Location Selected</strong><br>
         <span class="text-meta">Lat: ${latStr}, Lng: ${lngStr}</span>
-        <hr style="margin: 6px 0; border: none; border-top: 1px solid #DDD;">
-        <button class="btn btn-destructive" style="min-height: 32px; padding: 0 8px; font-size: 11px;" onclick="liveMap.openRoadBlockModalWithPoint(${latStr}, ${lngStr})">
+        <hr style="margin: 8px 0; border: none; border-top: 1px solid var(--border-hairline);">
+        <button class="btn btn-destructive" style="min-height: 34px; padding: 0 12px; font-size: 11px; width: 100%;" onclick="liveMap.openRoadBlockModalWithPoint(${latStr}, ${lngStr})">
           🛑 Block Road At This Point
         </button>
       </div>
@@ -361,13 +363,13 @@ class LiveMapManager {
 
       contentEl.innerHTML = `
         <div style="margin-bottom: var(--space-3);">${badge}</div>
-        <h3 style="font-size: var(--text-base); margin-bottom: 4px;">${entity.name}</h3>
-        <p class="text-meta" style="margin-bottom: var(--space-3);">Type: <strong>${entity.type}</strong></p>
+        <h3 style="font-size: var(--text-base); margin-bottom: 4px; font-weight: 700; color: var(--white);">${entity.name}</h3>
+        <p class="text-meta" style="margin-bottom: var(--space-3); color: var(--sage-100);">Type: <strong style="color:var(--white);">${entity.type}</strong></p>
 
-        <div style="background: var(--bg-honeydew); padding: var(--space-3); border-radius: var(--radius); border: 1px solid var(--border-hairline); margin-bottom: var(--space-4); font-size: var(--text-sm);">
+        <div style="background: rgba(255,255,255,0.08); padding: var(--space-3); border-radius: var(--radius); border: 1px solid rgba(255,255,255,0.15); margin-bottom: var(--space-4); font-size: var(--text-sm); color: var(--sage-100);">
           <div><strong>Confidence Score:</strong> ${entity.confidence || 80}%</div>
           <div><strong>Verification:</strong> ${entity.confirmed ? 'Confirmed (Solid Ring)' : 'Unconfirmed Report (Dashed Ring)'}</div>
-          <div style="margin-top: 6px; font-size: var(--text-xs); color: var(--slate-500);">${entity.notes || 'No description provided.'}</div>
+          <div style="margin-top: 6px; font-size: var(--text-xs); opacity: 0.9;">${entity.notes || 'No description provided.'}</div>
         </div>
 
         <div style="display: flex; flex-direction: column; gap: var(--space-2);">
@@ -386,17 +388,17 @@ class LiveMapManager {
 
       contentEl.innerHTML = `
         <div style="margin-bottom: var(--space-3);">${badge}</div>
-        <h3 style="font-size: var(--text-base); margin-bottom: 4px;">${entity.name}</h3>
-        <p class="text-meta" style="margin-bottom: var(--space-3);">Cargo: <strong>${entity.cargo}</strong></p>
+        <h3 style="font-size: var(--text-base); margin-bottom: 4px; font-weight: 700; color: var(--white);">${entity.name}</h3>
+        <p class="text-meta" style="margin-bottom: var(--space-3); color: var(--sage-100);">Cargo: <strong style="color:var(--white);">${entity.cargo}</strong></p>
 
-        <div style="background: var(--bg-honeydew); padding: var(--space-3); border-radius: var(--radius); border: 1px solid var(--border-hairline); margin-bottom: var(--space-4); font-size: var(--text-sm);">
+        <div style="background: rgba(255,255,255,0.08); padding: var(--space-3); border-radius: var(--radius); border: 1px solid rgba(255,255,255,0.15); margin-bottom: var(--space-4); font-size: var(--text-sm); color: var(--sage-100);">
           <div><strong>Origin:</strong> ${entity.origin}</div>
           <div><strong>Destination:</strong> ${entity.dest}</div>
           <div><strong>Priority Tier:</strong> ${entity.priority}</div>
           <div><strong>Driver Ack:</strong> ${entity.ackStatus || 'Acknowledged'}</div>
         </div>
 
-        <button class="btn btn-secondary" style="width: 100%;" onclick="window.location.href='convoy-dispatch.html'">
+        <button class="btn btn-secondary" style="width: 100%; border-color: rgba(255,255,255,0.3); color: var(--white); background: rgba(255,255,255,0.1);" onclick="window.location.href='convoy-dispatch.html'">
           View Convoy Dispatch Board →
         </button>
       `;
@@ -405,16 +407,16 @@ class LiveMapManager {
 
       contentEl.innerHTML = `
         <div style="margin-bottom: var(--space-3);">${badge}</div>
-        <h3 style="font-size: var(--text-base); margin-bottom: 4px;">${entity.name}</h3>
-        <p class="text-meta" style="margin-bottom: var(--space-3);">Population: <strong>${entity.population} occupants</strong></p>
+        <h3 style="font-size: var(--text-base); margin-bottom: 4px; font-weight: 700; color: var(--white);">${entity.name}</h3>
+        <p class="text-meta" style="margin-bottom: var(--space-3); color: var(--sage-100);">Population: <strong style="color:var(--white);">${entity.population} occupants</strong></p>
 
         ${entity.isolated ? `
-          <div style="background: var(--slate-800); color: var(--white); padding: var(--space-3); border-radius: var(--radius); margin-bottom: var(--space-4); font-size: var(--text-xs);">
+          <div style="background: rgba(0,0,0,0.3); color: var(--white); padding: var(--space-3); border-radius: var(--radius); border: 1px solid var(--slate-800); margin-bottom: var(--space-4); font-size: var(--text-xs);">
             <strong>⚠️ ISOLATED SHELTER WARNING:</strong> No road path reachable from any active warehouse depot! Automated alert active.
           </div>
         ` : ''}
 
-        <button class="btn btn-secondary" style="width: 100%;" onclick="window.location.href='shelter-board.html'">
+        <button class="btn btn-secondary" style="width: 100%; border-color: rgba(255,255,255,0.3); color: var(--white); background: rgba(255,255,255,0.1);" onclick="window.location.href='shelter-board.html'">
           Open Shelter Regional Board →
         </button>
       `;

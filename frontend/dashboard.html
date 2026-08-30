@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,60 +14,84 @@
   <style>
     .summary-strip {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       gap: var(--space-4);
-      margin-bottom: var(--space-5);
+      margin-bottom: var(--space-6);
     }
-    .metric-card {
-      background: var(--white);
-      border: 1px solid var(--border-hairline);
-      border-radius: var(--radius);
-      padding: var(--space-4);
+
+    .dashboard-layout-grid {
+      display: grid;
+      grid-template-columns: 2.2fr 1fr;
+      gap: var(--space-5);
+    }
+
+    @media (max-width: 960px) {
+      .dashboard-layout-grid {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
+
 <body>
 
   <main class="page-main" id="main-content">
     <div class="container" style="margin-top: var(--space-5);">
       <!-- HEADER -->
-      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-5);">
+      <div
+        style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-5); flex-wrap: wrap; gap: var(--space-3);">
         <div>
           <span class="panel-label">WAREHOUSE HUB MANAGEMENT</span>
-          <h2 id="wh-title">Hub Alpha (Central Depot) Dashboard</h2>
+          <h1 id="wh-title" style="margin-top: 2px;">Hub Alpha (Central Depot) Dashboard</h1>
         </div>
-        <div style="display: flex; gap: var(--space-2);">
-          <span class="badge badge-safe">Logistics Hub</span>
-          <button class="btn btn-primary" onclick="window.location.href='convoy-dispatch.html'">+ Dispatch Convoy</button>
+        <div style="display: flex; gap: var(--space-3); align-items: center;">
+          <span class="badge badge-safe">
+            <svg class="badge-icon" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                clip-rule="evenodd" />
+            </svg>
+            Logistics Hub Online
+          </span>
+          <button class="btn btn-primary" onclick="window.location.href='convoy-dispatch.html'">+ Dispatch
+            Convoy</button>
         </div>
       </div>
 
-      <!-- INVENTORY METRICS -->
+      <!-- INVENTORY METRICS STRIP -->
       <div class="summary-strip">
-        <div class="metric-card">
-          <span class="text-meta">ON-HAND INVENTORY</span>
-          <div class="data-numeral" id="metric-onhand">14,000 Units</div>
+        <div class="stat-card">
+          <span class="stat-label">ON-HAND INVENTORY</span>
+          <div class="stat-value" id="metric-onhand">14,000 Units</div>
+          <span class="text-meta">Total warehouse stock</span>
         </div>
-        <div class="metric-card" style="border-left: 4px solid var(--forest-600);">
-          <span class="text-meta">RESERVED FOR CONVOYS</span>
-          <div class="data-numeral" id="metric-reserved" style="color: var(--forest-600);">2,000 Units</div>
+        <div class="stat-card" style="border-left: 5px solid var(--forest-600);">
+          <span class="stat-label" style="color: var(--forest-600);">RESERVED FOR CONVOYS</span>
+          <div class="stat-value" id="metric-reserved" style="color: var(--forest-600);">2,000 Units</div>
+          <span class="text-meta">Staged & locked</span>
         </div>
-        <div class="metric-card" style="border-left: 4px solid var(--sage-500);">
-          <span class="text-meta">AVAILABLE FOR DISPATCH</span>
-          <div class="data-numeral" id="metric-available" style="color: var(--forest-700);">12,000 Units</div>
+        <div class="stat-card" style="border-left: 5px solid var(--sage-500);">
+          <span class="stat-label" style="color: var(--forest-700);">AVAILABLE FOR DISPATCH</span>
+          <div class="stat-value" id="metric-available" style="color: var(--forest-700);">12,000 Units</div>
+          <span class="text-meta">Ready for allocation</span>
         </div>
-        <div class="metric-card" style="border-left: 4px solid var(--slate-800);">
-          <span class="text-meta">SUPPLY SWAP OPPORTUNITIES</span>
-          <div class="data-numeral" id="metric-matches" style="color: var(--slate-800);">3 Matches</div>
+        <div class="stat-card" style="border-left: 5px solid var(--slate-800);">
+          <span class="stat-label" style="color: var(--slate-800);">SUPPLY SWAP MATCHES</span>
+          <div class="stat-value" id="metric-matches" style="color: var(--slate-800);">3 Matches</div>
+          <span class="text-meta">Inter-depot opportunities</span>
         </div>
       </div>
 
       <!-- CARDS GRID -->
-      <div style="display: grid; grid-template-columns: 2fr 1fr; gap: var(--space-5);">
+      <div class="dashboard-layout-grid">
         <div class="card">
           <div class="card-header">
-            <span class="card-title">Hub Alpha Active Convoys</span>
-            <button class="btn btn-secondary" onclick="window.location.href='convoy-dispatch.html'">View Dispatch Board →</button>
+            <div>
+              <span class="panel-label">ACTIVE CONVOYS TELEMETRY</span>
+              <span class="card-title" style="display: block; margin-top: 2px;">Hub Alpha Active Convoys</span>
+            </div>
+            <button class="btn btn-secondary" onclick="window.location.href='convoy-dispatch.html'">View Dispatch Board
+              →</button>
           </div>
           <div class="table-container">
             <table class="data-table">
@@ -93,6 +118,23 @@
     </div>
   </main>
 
+  <footer class="app-footer">
+    <div>
+      <strong>DISISTA CONTROL</strong> v2.4 — Emergency Relief Supply Chain Resilience
+    </div>
+    <div style="display: flex; gap: var(--space-4);">
+      <span class="badge badge-safe">
+        <svg class="badge-icon" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd"
+            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+            clip-rule="evenodd" />
+        </svg>
+        4-Hue Palette System
+      </span>
+      <span>♿ WCAG AA</span>
+    </div>
+  </footer>
+
   <script src="js/auth.js"></script>
   <script src="js/statusBadge.js"></script>
   <script src="js/toast.js"></script>
@@ -110,4 +152,5 @@
   <script src="js/navbar.js"></script>
   <script src="js/pages/dashboard.js"></script>
 </body>
+
 </html>

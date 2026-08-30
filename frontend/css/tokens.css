@@ -1,26 +1,41 @@
 /* ==========================================
    DISISTA CONTROL — DESIGN TOKENS
-   Locked 4-Hue Palette System
+   Reference Mockup Deep Purple Palette System
    ========================================== */
 
 :root {
-  /* Locked Palette — Do not introduce new hues */
-  --bg-honeydew:     #EDF3E0;
-  --sage-500:        #8FAF8C;
-  --forest-600:      #5A7A68;
-  --forest-700:      #4A6656;
-  --sage-100:        #E4EBE0;
-  --slate-800:       #3A4750;
+  /* Reference Image Purple Palette */
+  --bg-honeydew:     #17142E; /* Deep dark purple background */
+  --sage-500:        #8B74BD; /* Medium purple accent / border */
+  --forest-600:      #5C459B; /* Primary vibrant purple button/badge */
+  --forest-700:      #2E2A5C; /* Dark purple container card */
+  --sage-100:        #EAE8F2; /* Light grey-purple input background */
+  --slate-800:       #191632; /* Deepest slate-purple base */
 
   /* Additive Neutrals — Structure & Contrast */
   --white:           #FFFFFF;
-  --slate-500:       #6B7680;
-  --border-hairline: #D8E0D2;
+  --slate-500:       #A59EC5; /* Soft light purple-grey text */
+  --border-hairline: rgba(139, 116, 189, 0.3);
+  --border-subtle:   rgba(92, 69, 155, 0.4);
 
-  /* Radii */
-  --radius:          8px;
-  --radius-lg:       12px; /* Modals / Sheets only */
+  /* Radii (Modern Curved Geometry from Mockup) */
+  --radius-sm:       8px;
+  --radius:          14px;
+  --radius-lg:       22px; /* Modals / Major Containers / Curved Cards */
+  --radius-xl:       30px; /* Floating Hero / Bottom Pill Cards */
   --radius-full:     9999px;
+
+  /* Elevation & Shadows */
+  --shadow-sm:       0 4px 12px rgba(10, 8, 25, 0.25);
+  --shadow-md:       0 10px 30px rgba(10, 8, 25, 0.4), 0 2px 8px rgba(10, 8, 25, 0.2);
+  --shadow-lg:       0 18px 48px rgba(10, 8, 25, 0.6), 0 4px 16px rgba(10, 8, 25, 0.3);
+  --shadow-glow:     0 0 24px rgba(92, 69, 155, 0.45);
+
+  /* Gradients (Strictly Purple Theme from Reference Image) */
+  --gradient-hero:      linear-gradient(140deg, #191632 0%, #2A254E 100%);
+  --gradient-card-dark: linear-gradient(150deg, #2E2A5C 0%, #201C43 100%);
+  --gradient-accent:    linear-gradient(135deg, #5C459B 0%, #7E63C3 100%);
+  --gradient-honeydew:  linear-gradient(180deg, #17142E 0%, #231F42 100%);
 
   /* Typography */
   --font-sans:       'Inter', 'IBM Plex Sans', 'Noto Sans', system-ui, -apple-system, sans-serif;
@@ -31,21 +46,23 @@
   --space-3: 12px;
   --space-4: 16px;
   --space-5: 24px;
-  --space-6: 32px;
-  --space-7: 48px;
+  --space-6: 36px;
+  --space-7: 52px;
 
   /* Type Scale — Data-Dense Ops UI (1.2 ratio) */
   --text-xs:   12px;
   --text-sm:   14px;
   --text-base: 16px;
   --text-lg:   19px;
-  --text-xl:   23px;
-  --text-2xl:  28px;
+  --text-xl:   24px;
+  --text-2xl:  30px;
+  --text-3xl:  38px;
 
   /* Motion */
-  --motion-fast: 120ms;
-  --motion-base: 200ms;
-  --ease:        cubic-bezier(0.2, 0.8, 0.2, 1);
+  --motion-fast: 140ms;
+  --motion-base: 240ms;
+  --ease:        cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* Field Mode Accessibility Token Override */
@@ -53,5 +70,6 @@ body.field-mode {
   --text-base:       18px;
   --text-sm:         16px;
   --text-xs:         14px;
-  --border-hairline: #B9C6B4;
+  --border-hairline: rgba(139, 116, 189, 0.5);
+  --radius:          16px;
 }

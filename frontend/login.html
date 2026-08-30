@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DISISTA CONTROL — Relief Route Intelligence Portal</title>
+  <title>DISISTA CONTROL — Operational Relief Intelligence Portal</title>
   <meta name="description" content="Emergency Relief Supply Chain Resilience & Rerouting System — Operational Portal Sign-In">
   <base href="./">
   <script src="js/env.js"></script>
@@ -13,17 +13,19 @@
   <link rel="stylesheet" href="css/components.css">
 
   <style>
-    /* Specialized Page Layout for Landing/Login */
+    /* Specialized Page Layout for Landing/Login (Inspired by Reference UI) */
     .portal-hero {
-      background-color: var(--forest-700);
+      background: var(--gradient-hero);
       color: var(--white);
       padding: var(--space-6) var(--space-5);
-      border-bottom: 2px solid var(--forest-600);
+      border-bottom: 3px solid var(--forest-600);
+      box-shadow: var(--shadow-md);
+      position: relative;
     }
 
     .portal-hero-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1.1fr 0.9fr;
       gap: var(--space-6);
       align-items: center;
     }
@@ -38,23 +40,25 @@
       display: inline-flex;
       align-items: center;
       gap: var(--space-2);
-      background-color: rgba(255, 255, 255, 0.12);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      padding: 4px var(--space-3);
+      background-color: rgba(255, 255, 255, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      padding: 6px var(--space-3);
       border-radius: var(--radius-full);
       font-size: var(--text-xs);
-      font-weight: 600;
-      letter-spacing: 0.05em;
+      font-weight: 700;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
       margin-bottom: var(--space-3);
+      backdrop-filter: blur(8px);
     }
 
     .hero-title {
-      font-size: 32px;
-      font-weight: 700;
-      line-height: 1.2;
+      font-size: 36px;
+      font-weight: 800;
+      line-height: 1.15;
       margin-bottom: var(--space-3);
       color: var(--white);
+      letter-spacing: -0.02em;
     }
 
     .hero-desc {
@@ -62,6 +66,7 @@
       color: var(--sage-100);
       line-height: 1.6;
       margin-bottom: var(--space-4);
+      max-width: 600px;
     }
 
     .pillar-list {
@@ -71,18 +76,26 @@
     }
 
     .pillar-item {
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      padding: var(--space-3);
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      padding: var(--space-4);
       border-radius: var(--radius);
       font-size: var(--text-xs);
+      backdrop-filter: blur(6px);
+      transition: transform var(--motion-fast) var(--ease), background var(--motion-fast) var(--ease);
+    }
+
+    .pillar-item:hover {
+      transform: translateY(-2px);
+      background: rgba(255, 255, 255, 0.14);
     }
 
     .pillar-item strong {
       display: block;
       color: var(--white);
       font-size: var(--text-sm);
-      margin-bottom: 2px;
+      margin-bottom: 4px;
+      font-weight: 700;
     }
 
     /* Role Cards Grid */
@@ -104,56 +117,113 @@
       cursor: pointer;
       position: relative;
       user-select: none;
+      border: 1.5px solid var(--border-hairline);
+      background-color: var(--white);
+      border-radius: var(--radius);
+      padding: var(--space-4);
+      transition: transform var(--motion-fast) var(--ease), box-shadow var(--motion-fast) var(--ease), border-color var(--motion-fast) var(--ease);
+    }
+
+    .role-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--forest-600);
+      box-shadow: var(--shadow-md);
     }
 
     .role-card.selected {
       border: 2px solid var(--forest-600) !important;
       background-color: var(--white);
+      box-shadow: var(--shadow-md), 0 0 0 3px rgba(90, 122, 104, 0.2);
     }
 
     .role-card.selected::after {
-      content: "SELECTED";
+      content: "✓ SELECTED";
       position: absolute;
       top: 12px;
       right: 12px;
       font-size: 10px;
-      font-weight: 700;
+      font-weight: 800;
       background-color: var(--forest-600);
       color: var(--white);
-      padding: 2px 6px;
-      border-radius: 4px;
+      padding: 3px 8px;
+      border-radius: var(--radius-full);
+      letter-spacing: 0.05em;
     }
 
     .role-badge {
       font-size: var(--text-xs);
-      font-weight: 600;
+      font-weight: 700;
       color: var(--forest-700);
       background-color: var(--sage-100);
-      padding: 2px var(--space-2);
+      padding: 3px 10px;
       border-radius: var(--radius-full);
       display: inline-block;
       margin-bottom: var(--space-2);
+      border: 1px solid var(--sage-500);
     }
 
-    /* Login Form Card */
+    /* Reference Image Styled Auth Card Container */
     .login-container {
-      max-width: 520px;
+      max-width: 480px;
       margin: 0 auto var(--space-7) auto;
     }
 
-    .quick-switch-bar {
-      background-color: var(--sage-100);
-      border: 1px solid var(--border-hairline);
-      border-radius: var(--radius-lg);
-      padding: var(--space-4);
-      margin-top: var(--space-5);
+    .auth-dark-card {
+      background: var(--gradient-card-dark);
+      color: var(--white);
+      border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+      padding: var(--space-6) var(--space-6) var(--space-5) var(--space-6);
+      box-shadow: var(--shadow-lg);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-bottom: none;
     }
 
-    .quick-btn-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: var(--space-2);
-      margin-top: var(--space-3);
+    .auth-dark-card .card-title {
+      color: var(--white);
+      font-size: 22px;
+      font-weight: 800;
+      text-align: center;
+      margin-bottom: var(--space-1);
+    }
+
+    .auth-dark-card .auth-subtitle {
+      color: var(--sage-100);
+      font-size: var(--text-xs);
+      text-align: center;
+      margin-bottom: var(--space-4);
+    }
+
+    .auth-dark-card .form-label {
+      color: var(--sage-100);
+      font-size: var(--text-xs);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .auth-dark-card .form-control {
+      background-color: #E8EFE5;
+      color: var(--slate-800);
+      border: 1px solid var(--sage-500);
+      border-radius: var(--radius);
+      font-weight: 500;
+    }
+
+    .auth-dark-card .form-control:focus {
+      background-color: var(--white);
+      border-color: var(--sage-500);
+      box-shadow: 0 0 0 3px rgba(143, 175, 140, 0.4);
+    }
+
+    /* Reference Image Curved White Bottom Section */
+    .auth-bottom-pill {
+      background: var(--white);
+      border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+      padding: var(--space-5) var(--space-6);
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--border-hairline);
+      border-top: none;
+      text-align: center;
     }
   </style>
 </head>
@@ -186,9 +256,9 @@
       <div class="portal-hero-grid">
         <div>
           <div class="hero-tag">
-            <span>🛡️ Official Government Emergency Infrastructure</span>
+            <span>🛡️ Official Emergency Relief Operations Command</span>
           </div>
-          <h1 class="hero-title">Emergency Relief Supply Chain Resilience & Rerouting</h1>
+          <h1 class="hero-title">Supply Chain Resilience & Convoy Rerouting</h1>
           <p class="hero-desc">
             Single-source operational command for predictive hazard fusion, dynamic convoy rerouting, shelter demand telemetry, and inter-warehouse Supply Swap balancing.
           </p>
@@ -197,18 +267,18 @@
         <div class="pillar-list">
           <div class="pillar-item">
             <strong>🌐 Live Hazard Fusion</strong>
-            Recency + sensor corroboration confidence mapping.
+            Recency & sensor corroboration confidence mapping.
           </div>
           <div class="pillar-item">
             <strong>🚛 Dynamic Rerouting</strong>
-            Automated shortest-safe-path recomputation for convoys.
+            Automated shortest-safe-path recomputation.
           </div>
           <div class="pillar-item">
             <strong>📦 Supply Swap</strong>
             Inter-warehouse stock balancing & cold-chain transfers.
           </div>
           <div class="pillar-item">
-            <strong>⚡ Isolated Shelter Alert</strong>
+            <strong>⚡ Shelter Telemetry</strong>
             Automated reachability audit & auto-escalations.
           </div>
         </div>
@@ -226,23 +296,27 @@
           <span class="panel-label">OPERATIONAL AUTHORIZATION</span>
           <h2>Select Operational Role</h2>
         </div>
-        <span class="text-meta">Step 1 of 2</span>
+        <span class="text-meta" style="font-weight: 600;">Step 1 of 2</span>
       </div>
 
       <div class="roles-grid" id="roles-container">
         <!-- Rendered by JS -->
       </div>
 
-      <!-- STEP 2: SIGN IN FORM -->
+      <!-- STEP 2: SIGN IN FORM (Inspired by Reference UI Layout) -->
       <div class="login-container">
-        <div class="card">
-          <div class="card-header">
-            <span class="card-title">Role Credentials Authentication</span>
-            <span class="badge badge-safe" id="selected-role-badge">Select Role Above</span>
+        <div class="auth-dark-card">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-3);">
+            <div class="card-title">Portal Sign In</div>
+            <span class="badge badge-safe" id="selected-role-badge">
+              <svg class="badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>
+              Select Role Above
+            </span>
           </div>
+          <p class="auth-subtitle">Enter operational credentials to access your designated command module</p>
 
           <form id="login-form" onsubmit="handleLoginSubmit(event)">
-            <div id="login-error" class="form-error-msg" style="display: none; margin-bottom: var(--space-3); padding: var(--space-2); background: var(--slate-800); color: var(--white); border-ra[...]
+            <div id="login-error" class="form-error-msg" style="display: none; margin-bottom: var(--space-3); padding: var(--space-3); background: var(--slate-800); color: var(--white); border-radius: var(--radius); border-left: 4px solid var(--forest-600);">
               <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
               </svg>
@@ -265,22 +339,22 @@
               <input type="text" class="form-control" id="username" value="Operator-409" required placeholder="e.g. OP-409">
             </div>
 
-            <div class="form-group">
+            <div class="form-group" style="margin-bottom: var(--space-5);">
               <label class="form-label" for="password">Security Passcode</label>
               <input type="password" class="form-control" id="password" value="••••••••" required>
             </div>
 
-            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: var(--space-2);">
+            <button type="submit" class="btn btn-primary" style="width: 100%; min-height: 48px; font-size: var(--text-base);">
               AUTHENTICATE & ENTER PORTAL →
             </button>
           </form>
         </div>
 
-        <!-- QUICK ACCESS FOR TESTING / REVIEW -->
-        <div class="quick-switch-bar">
-          <span class="panel-label">QUICK TEST ACCESS (1-CLICK DEMO LOGIN)</span>
-          <p class="text-meta" style="margin-top: 2px;">Instantly launch the portal under any role persona:</p>
-          <div class="quick-btn-grid">
+        <!-- QUICK ACCESS / DEMO SWITCHER IN WHITE BOTTOM PILL -->
+        <div class="auth-bottom-pill">
+          <span class="panel-label">QUICK DEMO ONE-CLICK LOGIN</span>
+          <p class="text-meta" style="margin-top: 2px; margin-bottom: var(--space-3);">Instantly launch portal under any persona:</p>
+          <div class="quick-btn-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-2);">
             <button class="btn btn-secondary" onclick="quickLogin('control_room')">🎯 Control Room</button>
             <button class="btn btn-secondary" onclick="quickLogin('district_admin')">🏛️ District Admin</button>
             <button class="btn btn-secondary" onclick="quickLogin('warehouse_manager')">📦 Warehouse Manager</button>
@@ -295,10 +369,13 @@
   <!-- FOOTER -->
   <footer class="app-footer">
     <div>
-      <strong>DISISTA CONTROL</strong> v2.4 — Emergency Relief Supply Chain Resilience
+      <strong>DISISTA CONTROL</strong> v2.4 — Relief Route Intelligence
     </div>
     <div style="display: flex; gap: var(--space-4);">
-      <span>🔒 Locked 4-Hue Palette</span>
+      <span class="badge badge-safe">
+        <svg class="badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>
+        4-Hue Palette System
+      </span>
       <span>♿ WCAG AA Compliant</span>
       <span>⚡ Offline Sync Ready</span>
     </div>
@@ -362,15 +439,15 @@
 
       Object.values(ROLES).forEach(role => {
         const card = document.createElement('div');
-        card.className = `card role-card hover-focus ${selectedRoleId === role.id ? 'selected' : ''}`;
+        card.className = `role-card ${selectedRoleId === role.id ? 'selected' : ''}`;
         card.setAttribute('tabindex', '0');
         card.onclick = () => selectRole(role.id);
         card.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') selectRole(role.id); };
 
         card.innerHTML = `
           <span class="role-badge">${role.badge}</span>
-          <h3 style="margin-bottom: 4px;">${role.name}</h3>
-          <p style="font-size: var(--text-sm); color: var(--slate-500); margin-bottom: var(--space-3); line-height: 1.4;">
+          <h3 style="margin-bottom: 6px; font-weight: 700;">${role.name}</h3>
+          <p style="font-size: var(--text-sm); color: var(--slate-500); margin-bottom: var(--space-3); line-height: 1.45;">
             ${role.description}
           </p>
           <div style="font-size: var(--text-xs); color: var(--forest-700); font-weight: 600;">
@@ -387,7 +464,7 @@
       
       const roleConfig = Object.values(ROLES).find(r => r.id === roleId);
       const badge = document.getElementById('selected-role-badge');
-      badge.innerText = roleConfig ? roleConfig.name : 'Select Role';
+      badge.innerHTML = `<svg class="badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg> ${roleConfig ? roleConfig.name : 'Select Role'}`;
 
       document.getElementById('login-error').style.display = 'none';
       renderRoleCards();
@@ -397,7 +474,7 @@
       selectedRoleId = roleId;
       const roleConfig = Object.values(ROLES).find(r => r.id === roleId);
       const badge = document.getElementById('selected-role-badge');
-      badge.innerText = roleConfig ? roleConfig.name : 'Select Role';
+      badge.innerHTML = `<svg class="badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg> ${roleConfig ? roleConfig.name : 'Select Role'}`;
       renderRoleCards();
     }
 
