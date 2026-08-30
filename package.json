@@ -5,7 +5,8 @@
   "main": "frontend/index.html",
   "scripts": {
     "dev": "npx -y serve ./frontend -p 8080",
-    "start": "npx -y serve ./frontend -p 8080"
+    "start": "npx -y serve ./frontend -p 8080",
+    "build": "mkdir -p dist && cp -r frontend/* dist/"
   },
   "keywords": [
     "relief",

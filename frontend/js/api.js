@@ -1,9 +1,12 @@
 /* ==========================================
    DISISTA CONTROL — API CLIENT & MOCK ENGINE
-   REST Endpoint Client with Standalone Mock Fallback
+   Production-friendly: runtime-configurable API base, timeout and safer fallback
    ========================================== */
 
-const API_BASE_URL = 'http://localhost:4000/api';
+// Determine API base from runtime env (window.__ENV__), meta tag, or sensible default.
+const API_BASE_URL = (window.__ENV && window.__ENV.API_BASE_URL)
+  || (document.querySelector('meta[name="api-base"]') && document.querySelector('meta[name="api-base"]').content)
+  || '/api';
 
 const MOCK_DATA = {
   warehouses: [
@@ -12,9 +15,9 @@ const MOCK_DATA = {
     { id: 'wh-charlie', name: 'Hub Charlie (Coastal Base)', location: 'Sector 8', onHand: 9800, reserved: 800, available: 9000 }
   ],
   convoys: [
-    { id: 'convoy-14', cargo: 'Insulin & Blood Products', cargoPriority: 'Insulin/Blood', origin: 'Hub Alpha', destination: 'Shelter 12', status: 'On Route', eta: '14:20 UTC', riskIndex: 'Caution (1 segment)' },
-    { id: 'convoy-22', cargo: 'Infant Nutrition & Clean Water', cargoPriority: 'Infant Nutrition', origin: 'Hub Bravo', destination: 'Shelter 04', status: 'Rerouted', eta: '16:05 UTC', riskIndex: 'Safe' },
-    { id: 'convoy-09', cargo: 'General Aid Supplies', cargoPriority: 'General', origin: 'Hub Charlie', destination: 'Shelter 19', status: 'Stranded', eta: 'Delayed', riskIndex: 'Blocked (Impassable Bridge B14)' }
+    { id: 'convoy-14', cargo: 'Insulin & Blood Products', cargoPriority: 'Insulin/Blood', origin: 'Hub Alpha', destination: 'Shelter 12', status: 'On Route', eta: '14:20 UTC', riskIndex: 'Caution' },
+    { id: 'convoy-22', cargo: 'Infant Nutrition & Clean Water', cargoPriority: 'Infant Nutrition', origin: 'Hub Bravo', destination: 'Shelter 04', status: 'Rerouted', eta: '16:05 UTC', riskIndex: 'Caution' },
+    { id: 'convoy-09', cargo: 'General Aid Supplies', cargoPriority: 'General', origin: 'Hub Charlie', destination: 'Shelter 19', status: 'Stranded', eta: 'Delayed', riskIndex: 'Blocked' }
   ],
   shelters: [
     { id: 'shelter-12', name: 'Shelter 12 (North Community)', population: 1450, daysSupply: 1.5, urgencyTier: 'critical', isolated: false },
@@ -32,15 +35,31 @@ const MOCK_DATA = {
 
 class ApiClient {
   async fetchJson(endpoint, options = {}) {
+    const controller = new AbortController();
+    const timeout = options.timeout || 7000; // sensible default
+    const signal = controller.signal;
+
+    const fetchOpts = {
+      headers: { 'Content-Type': 'application/json', ...options.headers },
+      signal,
+      ...options
+    };
+
+    const timer = setTimeout(() => controller.abort(), timeout);
+
     try {
-      const res = await fetch(`${API_BASE_URL}${endpoint}`, {
-        headers: { 'Content-Type': 'application/json', ...options.headers },
-        ...options
-      });
+      const res = await fetch(`${API_BASE_URL}${endpoint}`, fetchOpts);
+      clearTimeout(timer);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return await res.json();
+      try {
+        return await res.json();
+      } catch (jsonErr) {
+        console.warn('[API Client] JSON parse failed; returning empty object', jsonErr);
+        return {};
+      }
     } catch (err) {
       console.warn(`[API Client] Endpoint ${endpoint} unavailable, serving mock data fallback.`, err);
+      clearTimeout(timer);
       return this.getMockFallback(endpoint, options);
     }
   }

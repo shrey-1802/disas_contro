@@ -5,7 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DISISTA CONTROL — Relief Route Intelligence Portal</title>
   <meta name="description" content="Emergency Relief Supply Chain Resilience & Rerouting System — Operational Portal Sign-In">
-  
+  <base href="./">
+  <script src="js/env.js"></script>
+
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/components.css">
@@ -240,7 +242,7 @@
           </div>
 
           <form id="login-form" onsubmit="handleLoginSubmit(event)">
-            <div id="login-error" class="form-error-msg" style="display: none; margin-bottom: var(--space-3); padding: var(--space-2); background: var(--slate-800); color: var(--white); border-radius: var(--radius);">
+            <div id="login-error" class="form-error-msg" style="display: none; margin-bottom: var(--space-3); padding: var(--space-2); background: var(--slate-800); color: var(--white); border-ra[...]
               <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
               </svg>
@@ -327,6 +329,14 @@
       renderRoleCards();
       startLiveClock();
       updateFieldBtnText();
+
+      // Quick login gating: hide quick access in production by default
+      try {
+        const quickBar = document.querySelector('.quick-switch-bar');
+        if (!(window.__ENV && window.__ENV.ENABLE_QUICK_LOGIN)) {
+          if (quickBar) quickBar.style.display = 'none';
+        }
+      } catch (e) { /* ignore */ }
     });
 
     function startLiveClock() {
@@ -414,6 +424,11 @@
     }
 
     function quickLogin(roleId) {
+      // Respect runtime gating
+      if (!(window.__ENV && window.__ENV.ENABLE_QUICK_LOGIN)) {
+        toast.info('Quick login is disabled in this environment.');
+        return;
+      }
       selectRole(roleId);
       const targetScreen = auth.login(roleId, 'QuickTest-Operator');
       toast.success(`Quick login authorized for ${roleId}. Redirecting...`);

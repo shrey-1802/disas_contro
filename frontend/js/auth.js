@@ -1,6 +1,7 @@
 /* ==========================================
    DISISTA CONTROL — AUTHENTICATION & ACCESS CONTROL
    Single Source of Truth for Roles & Permissions
+   Production-hardened: robust redirects, runtime base resolution
    ========================================== */
 
 const ROLES = {
@@ -73,6 +74,16 @@ class AuthManager {
     return !!this.getCurrentUser();
   }
 
+  // Resolve a relative filename to an absolute URL using the current document as base.
+  _resolveTargetUrl(targetFilename) {
+    try {
+      return new URL(targetFilename, window.location.href).href;
+    } catch (e) {
+      // fallback
+      return targetFilename;
+    }
+  }
+
   login(roleId, username = 'Operator') {
     const roleConfig = Object.values(ROLES).find(r => r.id === roleId);
     if (!roleConfig) {
@@ -90,12 +101,13 @@ class AuthManager {
     };
 
     localStorage.setItem(this.STORAGE_KEY, JSON.stringify(session));
-    return roleConfig.defaultScreen;
+    // return an absolute URL for safer redirects
+    return this._resolveTargetUrl(roleConfig.defaultScreen);
   }
 
   logout() {
     localStorage.removeItem(this.STORAGE_KEY);
-    window.location.href = 'login.html';
+    window.location.href = this._resolveTargetUrl('login.html');
   }
 
   canPerform(action) {
@@ -105,11 +117,17 @@ class AuthManager {
     return allowed.includes(role);
   }
 
-  guardRoute(currentScreen) {
+  guardRoute(currentScreen = null) {
+    // derive the current screen filename if not supplied
+    if (!currentScreen) {
+      const parts = window.location.pathname.split('/');
+      currentScreen = parts[parts.length - 1] || 'index.html';
+    }
+
     const user = this.getCurrentUser();
     if (!user) {
       if (currentScreen !== 'login.html' && currentScreen !== 'index.html') {
-        window.location.href = 'login.html';
+        window.location.href = this._resolveTargetUrl('login.html');
       }
       return false;
     }
@@ -120,16 +138,16 @@ class AuthManager {
       return false;
     }
 
-    // Check if user is on login page while already authenticated
+    // If already logged in and on login/index, redirect to default
     if (currentScreen === 'login.html' || currentScreen === 'index.html') {
-      window.location.href = roleConfig.defaultScreen;
+      window.location.href = this._resolveTargetUrl(roleConfig.defaultScreen);
       return true;
     }
 
-    // Check permissions for target screen
+    // Ensure the currentScreen is allowed for the role
     if (!roleConfig.nav.includes(currentScreen)) {
       console.warn(`Unauthorized access to ${currentScreen} for role ${user.role}. Redirecting...`);
-      window.location.href = roleConfig.defaultScreen;
+      window.location.href = this._resolveTargetUrl(roleConfig.defaultScreen);
       return false;
     }
 

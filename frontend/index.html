@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DISISTA CONTROL — Relief Route Intelligence</title>
+  <base href="./">
+  <script src="js/env.js"></script>
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/components.css">
@@ -17,6 +19,7 @@
       if (user && user.role) {
         const roleConfig = Object.values(ROLES).find(r => r.id === user.role);
         if (roleConfig) {
+          // use resolved absolute URL for safer redirect
           window.location.href = roleConfig.defaultScreen;
           return;
         }
