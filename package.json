@@ -4,8 +4,8 @@
   "description": "Relief Route Intelligence — Emergency Relief Supply Chain Resilience & Rerouting System",
   "main": "frontend/index.html",
   "scripts": {
-    "dev": "npx -y serve ./frontend -p 8080",
-    "start": "npx -y serve ./frontend -p 8080",
+    "dev": "node frontend-server.js",
+    "start": "node frontend-server.js",
     "build": "mkdir -p dist && cp -r frontend/* dist/"
   },
   "keywords": [
