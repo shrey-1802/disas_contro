@@ -270,4 +270,3 @@ document.addEventListener('DOMContentLoaded', () => {
   window.shelterBoard = new ShelterBoardManager();
   window.shelterBoard.init();
 });
-
