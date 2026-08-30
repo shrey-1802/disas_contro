@@ -1,0 +1,556 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                    String                 @id @default(uuid())
+  email                 String                 @unique
+  username              String                 @unique
+  passwordHash          String
+  role                  String                 @default("warehouse_manager")
+  firstName             String?
+  lastName              String?
+  phone                 String?
+  district              String?
+  active                Boolean                @default(true)
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+
+  settings              UserSettings?
+  userRoles             UserRole[]
+  inventoryTransactions InventoryTransaction[]
+  requestedSwaps        SupplySwap[]           @relation("RequestedBy")
+  approvedSwaps         SupplySwap[]           @relation("ApprovedBy")
+  reportedHazards       Hazard[]               @relation("ReportedBy")
+  verifiedHazards       Hazard[]               @relation("VerifiedBy")
+  driverConvoys         Convoy[]               @relation("ConvoyDriver")
+  acknowledgedAlerts    Alert[]                @relation("AcknowledgedBy")
+  resolvedAlerts        Alert[]                @relation("ResolvedBy")
+  notifications         Notification[]
+  auditLogs             AuditLog[]
+  supplyRequests        SupplyRequest[]
+}
+
+model Role {
+  id          String           @id @default(uuid())
+  name        String           @unique
+  description String?
+  createdAt   DateTime         @default(now())
+  userRoles   UserRole[]
+  permissions RolePermission[]
+}
+
+model Permission {
+  id          String           @id @default(uuid())
+  action      String           @unique
+  description String?
+  createdAt   DateTime         @default(now())
+  roles       RolePermission[]
+}
+
+model UserRole {
+  id        String   @id @default(uuid())
+  userId    String
+  roleId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, roleId])
+}
+
+model RolePermission {
+  id           String     @id @default(uuid())
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+
+  @@unique([roleId, permissionId])
+}
+
+model UserSettings {
+  id                     String   @id @default(uuid())
+  userId                 String   @unique
+  user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notificationPreferences String   @default("{\"email\":true,\"sms\":false,\"push\":true,\"criticalOnly\":false}")
+  dashboardPreferences    String   @default("{\"defaultSector\":\"all\",\"refreshIntervalSec\":30}")
+  timezone               String   @default("UTC")
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+}
+
+model Warehouse {
+  id                    String                 @id @default(uuid())
+  name                  String
+  code                  String                 @unique
+  sector                String
+  latitude              Float
+  longitude             Float
+  address               String?
+  totalCapacity         Float                  @default(50000)
+  isOperational         Boolean                @default(true)
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+
+  inventoryItems        InventoryItem[]
+  inventoryTransactions InventoryTransaction[]
+  sourceSwaps           SupplySwap[]           @relation("SourceWarehouse")
+  targetSwaps           SupplySwap[]           @relation("TargetWarehouse")
+  convoys               Convoy[]
+  routes                Route[]
+  supplyOffers          SupplyOffer[]
+}
+
+model InventoryItem {
+  id                    String                 @id @default(uuid())
+  warehouseId           String
+  warehouse             Warehouse              @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  name                  String
+  sku                   String                 @unique
+  category              String
+  quantity              Float                  @default(0)
+  availableQuantity     Float                  @default(0)
+  reservedQuantity      Float                  @default(0)
+  unit                  String                 @default("units")
+  batchNumber           String?
+  expiryDate            DateTime?
+  criticality           String                 @default("MEDIUM")
+  isColdChain           Boolean                @default(false)
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+
+  transactions          InventoryTransaction[]
+  swapItems             SupplySwapItem[]
+  convoyItems           ConvoyItem[]
+
+  @@index([warehouseId])
+  @@index([category])
+  @@index([criticality])
+}
+
+model InventoryTransaction {
+  id                String        @id @default(uuid())
+  inventoryItemId   String
+  inventoryItem     InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+  warehouseId       String
+  warehouse         Warehouse     @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  type              String
+  quantity          Float
+  previousQuantity  Float         @default(0)
+  newQuantity       Float         @default(0)
+  referenceType     String?
+  referenceId       String?
+  notes             String?
+  performedByUserId String?
+  performedBy       User?         @relation(fields: [performedByUserId], references: [id], onDelete: SetNull)
+  createdAt         DateTime      @default(now())
+
+  @@index([inventoryItemId])
+  @@index([warehouseId])
+  @@index([type])
+}
+
+model Shelter {
+  id            String                     @id @default(uuid())
+  name          String
+  code          String                     @unique
+  sector        String
+  latitude      Float
+  longitude     Float
+  address       String?
+  population    Int                        @default(0)
+  capacity      Int                        @default(1000)
+  status        String                     @default("ACTIVE")
+  accessibility String                     @default("SAFE")
+  priority      String                     @default("MEDIUM")
+  isIsolated    Boolean                    @default(false)
+  daysOfSupply  Float                      @default(3.0)
+  createdAt     DateTime                   @default(now())
+  updatedAt     DateTime                   @updatedAt
+
+  requirements  ShelterSupplyRequirement[]
+  supplyRequests SupplyRequest[]
+  convoys       Convoy[]
+  routes        Route[]
+  supplySwaps   SupplySwap[]               @relation("TargetShelter")
+
+  @@index([sector])
+  @@index([isIsolated])
+}
+
+model ShelterSupplyRequirement {
+  id                String          @id @default(uuid())
+  shelterId         String
+  shelter           Shelter         @relation(fields: [shelterId], references: [id], onDelete: Cascade)
+  itemName          String
+  category          String
+  requiredQuantity  Float
+  deliveredQuantity Float           @default(0)
+  unit              String          @default("units")
+  priority          String          @default("HIGH")
+  criticality       String          @default("CRITICAL")
+  urgencyTier       String          @default("critical")
+  deadline          DateTime?
+  status            String          @default("PENDING")
+  isColdChain       Boolean         @default(false)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  supplyRequests    SupplyRequest[]
+
+  @@index([shelterId])
+  @@index([status])
+}
+
+model SupplyRequest {
+  id                String                    @id @default(uuid())
+  shelterId         String
+  shelter           Shelter                   @relation(fields: [shelterId], references: [id], onDelete: Cascade)
+  requirementId     String?
+  requirement       ShelterSupplyRequirement? @relation(fields: [requirementId], references: [id], onDelete: SetNull)
+  requestedByUserId String?
+  requestedBy       User?                     @relation(fields: [requestedByUserId], references: [id], onDelete: SetNull)
+  status            String                    @default("OPEN")
+  urgency           String                    @default("HIGH")
+  notes             String?
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+
+  offers            SupplyOffer[]
+
+  @@index([shelterId])
+}
+
+model SupplyOffer {
+  id              String        @id @default(uuid())
+  supplyRequestId String
+  supplyRequest   SupplyRequest @relation(fields: [supplyRequestId], references: [id], onDelete: Cascade)
+  warehouseId     String
+  warehouse       Warehouse     @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  offeredQuantity Float
+  status          String        @default("PENDING")
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model SupplySwap {
+  id                  String           @id @default(uuid())
+  swapCode            String           @unique
+  sourceWarehouseId   String
+  sourceWarehouse     Warehouse        @relation("SourceWarehouse", fields: [sourceWarehouseId], references: [id])
+  targetWarehouseId   String?
+  targetWarehouse     Warehouse?       @relation("TargetWarehouse", fields: [targetWarehouseId], references: [id])
+  targetShelterId     String?
+  targetShelter       Shelter?         @relation("TargetShelter", fields: [targetShelterId], references: [id])
+  status              String           @default("PROPOSED")
+  matchScore          Float            @default(0)
+  reasons             String?
+  requestedByUserId   String?
+  requestedBy         User?            @relation("RequestedBy", fields: [requestedByUserId], references: [id], onDelete: SetNull)
+  approvedByUserId    String?
+  approvedBy          User?            @relation("ApprovedBy", fields: [approvedByUserId], references: [id], onDelete: SetNull)
+  rejectionReason     String?
+  sourceStockBefore   Float?
+  sourceStockAfter    Float?
+  targetStockBefore   Float?
+  targetStockAfter    Float?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  items               SupplySwapItem[]
+  legs                SupplySwapLeg[]
+
+  @@index([sourceWarehouseId])
+  @@index([status])
+}
+
+model SupplySwapItem {
+  id              String        @id @default(uuid())
+  supplySwapId    String
+  supplySwap      SupplySwap    @relation(fields: [supplySwapId], references: [id], onDelete: Cascade)
+  inventoryItemId String
+  inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id])
+  itemName        String
+  quantity        Float
+  unit            String        @default("units")
+  isColdChain     Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+
+  @@index([supplySwapId])
+}
+
+model SupplySwapLeg {
+  id              String      @id @default(uuid())
+  supplySwapId    String
+  supplySwap      SupplySwap  @relation(fields: [supplySwapId], references: [id], onDelete: Cascade)
+  legOrder        Int         @default(1)
+  fromWarehouseId String
+  toWarehouseId   String
+  routeId         String?
+  status          String      @default("PLANNED")
+  vehicleId       String?
+  createdAt       DateTime    @default(now())
+}
+
+model Vehicle {
+  id               String    @id @default(uuid())
+  code             String    @unique
+  plateNumber      String
+  type             String    @default("MEDIUM_TRUCK")
+  capacityKg       Float     @default(5000)
+  isRefrigerated   Boolean   @default(false)
+  status           String    @default("AVAILABLE")
+  currentLatitude  Float?
+  currentLongitude Float?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  convoys          Convoy[]
+}
+
+model Route {
+  id                   String               @id @default(uuid())
+  name                 String
+  code                 String               @unique
+  originWarehouseId    String
+  originWarehouse      Warehouse            @relation(fields: [originWarehouseId], references: [id])
+  destinationShelterId String
+  destinationShelter   Shelter              @relation(fields: [destinationShelterId], references: [id])
+  totalDistanceKm      Float
+  estimatedDurationMin Int
+  operationalStatus    String               @default("SAFE")
+  riskScore            Float                @default(10)
+  geometryGeoJson      String?
+  isAlternative        Boolean              @default(false)
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+
+  segments             RouteSegment[]
+  convoys              Convoy[]
+  hazardImpacts        HazardRouteImpact[]
+  rerouteHistories     ConvoyRerouteHistory[] @relation("NewRoute")
+  previousHistories    ConvoyRerouteHistory[] @relation("PreviousRoute")
+
+  @@index([originWarehouseId])
+  @@index([destinationShelterId])
+  @@index([operationalStatus])
+}
+
+model RouteSegment {
+  id                String              @id @default(uuid())
+  routeId           String
+  route             Route               @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  segmentOrder      Int
+  name              String
+  startLat          Float
+  startLon          Float
+  endLat            Float
+  endLon            Float
+  distanceKm        Float
+  roadClass         String              @default("PRIMARY")
+  weightLimitTons   Float               @default(20.0)
+  operationalStatus String              @default("SAFE")
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  hazardImpacts     HazardRouteImpact[]
+
+  @@index([routeId])
+}
+
+model Hazard {
+  id               String              @id @default(uuid())
+  hazardCode       String              @unique
+  type             String
+  severity         String              @default("CAUTION")
+  title            String
+  description      String?
+  latitude         Float
+  longitude        Float
+  radiusMeters     Float               @default(500)
+  confidence       Int                 @default(80)
+  source           String              @default("Field Report")
+  isConfirmed      Boolean             @default(false)
+  status           String              @default("ACTIVE")
+  reportedByUserId String?
+  reportedBy       User?               @relation("ReportedBy", fields: [reportedByUserId], references: [id], onDelete: SetNull)
+  verifiedByUserId String?
+  verifiedBy       User?               @relation("VerifiedBy", fields: [verifiedByUserId], references: [id], onDelete: SetNull)
+  reportedAt       DateTime            @default(now())
+  verifiedAt       DateTime?
+  resolvedAt       DateTime?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  routeImpacts     HazardRouteImpact[]
+  reroutes         ConvoyRerouteHistory[]
+
+  @@index([type])
+  @@index([severity])
+  @@index([status])
+}
+
+model HazardRouteImpact {
+  id          String        @id @default(uuid())
+  hazardId    String
+  hazard      Hazard        @relation(fields: [hazardId], references: [id], onDelete: Cascade)
+  routeId     String
+  route       Route         @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  segmentId   String?
+  segment     RouteSegment? @relation(fields: [segmentId], references: [id], onDelete: SetNull)
+  impactLevel String        @default("CAUTION")
+  notes       String?
+  createdAt   DateTime      @default(now())
+
+  @@index([hazardId])
+  @@index([routeId])
+}
+
+model Convoy {
+  id                  String                 @id @default(uuid())
+  convoyCode          String                 @unique
+  warehouseId         String
+  warehouse           Warehouse              @relation(fields: [warehouseId], references: [id])
+  destinationShelterId String
+  destinationShelter  Shelter                @relation(fields: [destinationShelterId], references: [id])
+  vehicleId           String?
+  vehicle             Vehicle?               @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  driverUserId        String?
+  driver              User?                  @relation("ConvoyDriver", fields: [driverUserId], references: [id], onDelete: SetNull)
+  status              String                 @default("PLANNED")
+  priority            String                 @default("HIGH")
+  cargoDescription    String
+  cargoPriority       String                 @default("General")
+  requiresColdChain   Boolean                @default(false)
+  routeId             String?
+  route               Route?                 @relation(fields: [routeId], references: [id], onDelete: SetNull)
+  riskIndex           String                 @default("Safe")
+  riskScore           Float                  @default(15)
+  departureTime       DateTime?
+  estimatedArrival    DateTime?
+  actualArrival       DateTime?
+  afterActionReport   String?
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+
+  items               ConvoyItem[]
+  locations           ConvoyLocation[]
+  rerouteHistories    ConvoyRerouteHistory[]
+
+  @@index([warehouseId])
+  @@index([destinationShelterId])
+  @@index([status])
+}
+
+model ConvoyItem {
+  id              String        @id @default(uuid())
+  convoyId        String
+  convoy          Convoy        @relation(fields: [convoyId], references: [id], onDelete: Cascade)
+  inventoryItemId String
+  inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id])
+  itemName        String
+  quantity        Float
+  unit            String        @default("units")
+  isColdChain     Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+
+  @@index([convoyId])
+}
+
+model ConvoyLocation {
+  id             String   @id @default(uuid())
+  convoyId       String
+  convoy         Convoy   @relation(fields: [convoyId], references: [id], onDelete: Cascade)
+  latitude       Float
+  longitude      Float
+  speedKmh       Float    @default(0)
+  headingDegrees Float    @default(0)
+  recordedAt     DateTime @default(now())
+  createdAt      DateTime @default(now())
+
+  @@index([convoyId])
+  @@index([recordedAt])
+}
+
+model ConvoyRerouteHistory {
+  id                   String    @id @default(uuid())
+  convoyId             String
+  convoy               Convoy    @relation(fields: [convoyId], references: [id], onDelete: Cascade)
+  previousRouteId      String?
+  previousRoute        Route?    @relation("PreviousRoute", fields: [previousRouteId], references: [id], onDelete: SetNull)
+  newRouteId           String?
+  newRoute             Route?    @relation("NewRoute", fields: [newRouteId], references: [id], onDelete: SetNull)
+  reason               String
+  triggeredByHazardId  String?
+  triggeredByHazard    Hazard?   @relation(fields: [triggeredByHazardId], references: [id], onDelete: SetNull)
+  approvedByUserId     String?
+  acknowledgedByDriver Boolean   @default(false)
+  acknowledgedAt       DateTime?
+  createdAt            DateTime  @default(now())
+
+  @@index([convoyId])
+}
+
+model Alert {
+  id                   String    @id @default(uuid())
+  title                String
+  description          String
+  type                 String    @default("SYSTEM_ALERT")
+  severity             String    @default("MEDIUM")
+  entityType           String?
+  entityId             String?
+  isAcknowledged       Boolean   @default(false)
+  acknowledgedByUserId String?
+  acknowledgedBy       User?     @relation("AcknowledgedBy", fields: [acknowledgedByUserId], references: [id], onDelete: SetNull)
+  acknowledgedAt       DateTime?
+  isResolved           Boolean   @default(false)
+  resolvedByUserId     String?
+  resolvedBy           User?     @relation("ResolvedBy", fields: [resolvedByUserId], references: [id], onDelete: SetNull)
+  resolvedAt           DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@index([type])
+  @@index([severity])
+  @@index([isAcknowledged])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String   @default("INFO")
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String
+  entity    String
+  entityId  String?
+  oldValue  String?
+  newValue  String?
+  ipAddress String?
+  userAgent String?
+  requestId String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([entity])
+  @@index([action])
+  @@index([createdAt])
+}
