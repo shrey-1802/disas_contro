@@ -14,18 +14,41 @@
 <body>
   <script src="js/auth.js"></script>
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const user = auth.getCurrentUser();
-      if (user && user.role) {
-        const roleConfig = Object.values(ROLES).find(r => r.id === user.role);
-        if (roleConfig) {
-          // use resolved absolute URL for safer redirect
-          window.location.href = roleConfig.defaultScreen;
-          return;
+    (function runRedirect() {
+      function doRedirect() {
+        try {
+          const user = window.auth && typeof window.auth.getCurrentUser === 'function'
+            ? auth.getCurrentUser()
+            : null;
+
+          if (user && user.role) {
+            const roleConfig = window.ROLES ? Object.values(ROLES).find(r => r.id === user.role) : null;
+            if (roleConfig) {
+              // Prefer the AuthManager resolver for absolute URLs when available
+              const target = (window.auth && typeof window.auth._resolveTargetUrl === 'function')
+                ? auth._resolveTargetUrl(roleConfig.defaultScreen)
+                : roleConfig.defaultScreen;
+              window.location.href = target;
+              return;
+            }
+          }
+        } catch (e) {
+          // If anything goes wrong, fall through to login redirect
+          console.error('Redirect check failed:', e);
         }
+
+        const loginTarget = (window.auth && typeof window.auth._resolveTargetUrl === 'function')
+          ? auth._resolveTargetUrl('login.html')
+          : 'login.html';
+        window.location.href = loginTarget;
       }
-      window.location.href = 'login.html';
-    });
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', doRedirect);
+      } else {
+        doRedirect();
+      }
+    })();
   </script>
 </body>
 </html>
