@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DISISTA CONTROL — Convoy Dispatch & Risk Board</title>
+  <title>DISISTA CONTROL — Convoy Dispatch &amp; Risk Board</title>
   <meta name="description" content="Relief Supply Convoy Dispatch Board, Risk Index Matrix, and Dynamic Reroute Telemetry">
 
   <link rel="stylesheet" href="css/tokens.css">
@@ -11,113 +11,60 @@
   <link rel="stylesheet" href="css/components.css">
 
   <style>
-    /* Convoy Dispatch Custom Styles */
     .summary-strip {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: var(--space-4);
       margin-bottom: var(--space-5);
     }
-
     .metric-card {
       background: var(--white);
       border: 1px solid var(--border-hairline);
       border-radius: var(--radius);
       padding: var(--space-4);
     }
-
     .filter-bar {
       background: var(--white);
       border: 1px solid var(--border-hairline);
       border-radius: var(--radius);
       padding: var(--space-4);
-      margin-bottom: var(--space-5);
+      margin-bottom: var(--space-4);
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
       gap: var(--space-3);
     }
-
     .filter-inputs {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       gap: var(--space-3);
     }
-
-    /* Risk Index Bar Component */
-    .risk-index-bar {
-      display: flex;
-      align-items: center;
-      gap: var(--space-2);
-    }
-
-    .risk-track {
-      width: 80px;
-      height: 8px;
-      background: var(--sage-100);
-      border-radius: 4px;
-      overflow: hidden;
-    }
-
-    .risk-fill {
-      height: 100%;
-      border-radius: 4px;
-    }
-
-    .risk-fill.low { width: 25%; background: var(--sage-500); }
+    .risk-index-bar { display: flex; align-items: center; gap: var(--space-2); }
+    .risk-track { width: 80px; height: 8px; background: var(--sage-100); border-radius: 4px; overflow: hidden; }
+    .risk-fill { height: 100%; border-radius: 4px; }
+    .risk-fill.low    { width: 25%; background: var(--sage-500); }
     .risk-fill.medium { width: 60%; background: var(--forest-600); }
-    .risk-fill.high { width: 95%; background: var(--slate-800); }
-
-    /* Path Diff Expansion Drawer */
-    .path-diff-row {
-      background-color: var(--sage-100) !important;
-    }
-
-    .path-diff-container {
-      padding: var(--space-4);
-      border-left: 4px solid var(--forest-600);
-      font-size: var(--text-sm);
-    }
-
-    .old-path-diff {
-      text-decoration: line-through;
-      color: var(--slate-500);
-    }
-
-    .new-path-diff {
-      color: var(--forest-700);
-      font-weight: 600;
-    }
-
-    /* Bulk Action Bar */
-    .bulk-action-bar {
-      background: var(--slate-800);
-      color: var(--white);
-      padding: var(--space-3) var(--space-4);
-      border-radius: var(--radius);
-      margin-bottom: var(--space-4);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
+    .risk-fill.high   { width: 95%; background: var(--slate-800); }
+    .path-diff-row { background-color: var(--sage-100) !important; }
+    .path-diff-container { padding: var(--space-4); border-left: 4px solid var(--forest-600); font-size: var(--text-sm); }
+    .old-path-diff { text-decoration: line-through; color: var(--slate-500); }
+    .new-path-diff { color: var(--forest-700); font-weight: 600; }
   </style>
 </head>
 <body>
 
-  <!-- MAIN CONTAINER -->
-  <main class="page-main">
-    <div class="container" style="margin-top: var(--space-5);">
+  <main class="page-main" id="main-content">
+    <div class="container" style="margin-top:var(--space-5);">
 
       <!-- PAGE HEADER -->
-      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-5);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-5);">
         <div>
           <span class="panel-label">FLEET MISSION CONTROL</span>
-          <h2>Convoy Dispatch & Route Risk Board</h2>
+          <h1 style="font-size:var(--text-xl);margin:0;">Convoy Dispatch &amp; Route Risk Board</h1>
         </div>
-
-        <div style="display: flex; gap: var(--space-2);">
+        <div style="display:flex;gap:var(--space-2);">
           <span class="badge badge-safe" id="role-scope-badge">Full Network View</span>
           <button class="btn btn-primary" onclick="convoyDispatch.openNewConvoyModal()">+ Dispatch New Convoy</button>
         </div>
@@ -131,24 +78,35 @@
         </div>
         <div class="metric-card">
           <span class="text-meta">ON ROUTE (SAFE)</span>
-          <div class="data-numeral" style="color: var(--forest-700);" id="metric-on-route">1</div>
+          <div class="data-numeral" style="color:var(--forest-700);" id="metric-on-route">1</div>
         </div>
         <div class="metric-card">
           <span class="text-meta">REROUTED (IN TRANSIT)</span>
-          <div class="data-numeral" style="color: var(--forest-600);" id="metric-rerouted">1</div>
+          <div class="data-numeral" style="color:var(--forest-600);" id="metric-rerouted">1</div>
         </div>
         <div class="metric-card">
           <span class="text-meta">STRANDED / HIGH RISK</span>
-          <div class="data-numeral" style="color: var(--slate-800);" id="metric-stranded">1</div>
+          <div class="data-numeral" style="color:var(--slate-800);" id="metric-stranded">1</div>
         </div>
       </div>
+
+      <!-- LIVE SEARCH BAR -->
+      <div class="search-bar" style="margin-bottom:var(--space-3);">
+        <svg width="16" height="16" fill="none" stroke="var(--slate-500)" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+        </svg>
+        <input type="search" id="convoy-search-input"
+          placeholder="Search by convoy name, driver, cargo, origin, or destination…"
+          aria-label="Search convoy table">
+      </div>
+      <div id="convoy-search-chips" class="filter-chips-row" style="margin-bottom:var(--space-3);"></div>
 
       <!-- FILTER & SORT BAR -->
       <div class="filter-bar">
         <div class="filter-inputs">
           <div>
-            <label class="panel-label" style="display: block; margin-bottom: 2px;">Cargo Priority</label>
-            <select class="form-control" style="min-height: 38px;" id="filter-cargo" onchange="convoyDispatch.applyFilters()">
+            <label class="panel-label" style="display:block;margin-bottom:2px;" for="filter-cargo">Cargo Priority</label>
+            <select class="form-control" style="min-height:38px;" id="filter-cargo" onchange="convoyDispatch.applyFilters()">
               <option value="ALL">All Cargo Priorities</option>
               <option value="Insulin/Blood">Insulin / Blood (Cold-Chain)</option>
               <option value="Infant Nutrition">Infant Nutrition</option>
@@ -156,57 +114,57 @@
               <option value="General">General Aid</option>
             </select>
           </div>
-
           <div>
-            <label class="panel-label" style="display: block; margin-bottom: 2px;">Convoy Status</label>
-            <select class="form-control" style="min-height: 38px;" id="filter-status" onchange="convoyDispatch.applyFilters()">
+            <label class="panel-label" style="display:block;margin-bottom:2px;" for="filter-status">Convoy Status</label>
+            <select class="form-control" style="min-height:38px;" id="filter-status" onchange="convoyDispatch.applyFilters()">
               <option value="ALL">All Status Tiers</option>
               <option value="On Route">On Route (Safe)</option>
               <option value="Rerouted">Rerouted (Caution)</option>
               <option value="Stranded">Stranded (Blocked)</option>
             </select>
           </div>
-
           <div>
-            <label class="panel-label" style="display: block; margin-bottom: 2px;">Sort By</label>
-            <select class="form-control" style="min-height: 38px;" id="sort-by" onchange="convoyDispatch.applyFilters()">
+            <label class="panel-label" style="display:block;margin-bottom:2px;" for="sort-by">Sort By</label>
+            <select class="form-control" style="min-height:38px;" id="sort-by" onchange="convoyDispatch.applyFilters()">
               <option value="risk">Composite Risk Index (High → Low)</option>
               <option value="priority">Cargo Priority (Urgent → Normal)</option>
               <option value="eta">ETA Arrival Time</option>
             </select>
           </div>
         </div>
-
         <button class="btn btn-secondary" onclick="convoyDispatch.resetFilters()">Reset Filters</button>
       </div>
 
-      <!-- BULK ACTION BAR (Hidden when no selection) -->
+      <!-- BULK ACTION BAR -->
       <div class="bulk-action-bar hidden" id="bulk-bar">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <span>☑️</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span aria-hidden="true">☑️</span>
           <strong id="bulk-selected-count">0 Convoys Selected</strong>
         </div>
-        <div style="display: flex; gap: var(--space-2);">
-          <button class="btn btn-toggle" onclick="convoyDispatch.clearSelection()" style="background: rgba(255,255,255,0.15); color: #FFF;">Deselect All</button>
-          <button class="btn btn-primary" onclick="convoyDispatch.executeBulkDispatch()">⚡ BULK DISPATCH TO VERIFIED SAFE ROUTE</button>
+        <div style="display:flex;gap:var(--space-2);">
+          <button class="btn btn-toggle" onclick="convoyDispatch.clearSelection()" style="background:rgba(255,255,255,0.15);color:#FFF;">Deselect All</button>
+          <button class="btn btn-primary" onclick="convoyDispatch.executeBulkDispatch()">⚡ Bulk Dispatch to Verified Safe Route</button>
         </div>
       </div>
 
+      <!-- ERROR BANNER -->
+      <div id="convoy-error-banner"></div>
+
       <!-- CONVOY DATA TABLE -->
       <div class="table-container">
-        <table class="data-table">
+        <table class="data-table" role="table" aria-label="Active convoy missions">
           <thead>
             <tr>
-              <th style="width: 40px; text-align: center;">
-                <input type="checkbox" id="select-all-checkbox" onchange="convoyDispatch.toggleSelectAll(this.checked)">
+              <th scope="col" style="width:40px;text-align:center;">
+                <input type="checkbox" id="select-all-checkbox" onchange="convoyDispatch.toggleSelectAll(this.checked)" aria-label="Select all convoys">
               </th>
-              <th>Convoy ID & Cargo</th>
-              <th>Origin → Destination</th>
-              <th>Composite Risk Index</th>
-              <th>Status Tier</th>
-              <th>Driver & Ack Status</th>
-              <th>ETA</th>
-              <th style="text-align: right;">Actions</th>
+              <th scope="col">Convoy ID &amp; Cargo</th>
+              <th scope="col">Origin → Destination</th>
+              <th scope="col">Composite Risk Index</th>
+              <th scope="col">Status Tier</th>
+              <th scope="col">Driver &amp; Ack Status</th>
+              <th scope="col">ETA</th>
+              <th scope="col" style="text-align:right;">Actions</th>
             </tr>
           </thead>
           <tbody id="convoy-table-body">
@@ -219,30 +177,27 @@
   </main>
 
   <!-- NEW CONVOY DISPATCH MODAL -->
-  <div class="modal-overlay hidden" id="new-convoy-modal">
+  <div class="modal-overlay hidden" id="new-convoy-modal" role="dialog" aria-modal="true" aria-label="Dispatch new convoy">
     <div class="modal-card">
       <div class="card-header">
         <span class="card-title">Dispatch New Emergency Relief Convoy</span>
-        <button style="background: none; border: none; font-size: 18px; cursor: pointer;" onclick="convoyDispatch.closeNewConvoyModal()">✕</button>
+        <button style="background:none;border:none;font-size:18px;cursor:pointer;" onclick="convoyDispatch.closeNewConvoyModal()" aria-label="Close modal">✕</button>
       </div>
-
       <form onsubmit="convoyDispatch.handleNewConvoySubmit(event)">
         <div class="form-group">
           <label class="form-label" for="convoy-name-input">Convoy Name / Unit ID</label>
           <input type="text" class="form-control" id="convoy-name-input" required placeholder="e.g. Convoy 35">
         </div>
-
         <div class="form-group">
-          <label class="form-label" for="cargo-priority-input">Cargo Type & Priority</label>
+          <label class="form-label" for="cargo-priority-input">Cargo Type &amp; Priority</label>
           <select class="form-control" id="cargo-priority-input" required>
-            <option value="Insulin/Blood">🩸 Insulin & Blood Products (Urgent Cold-Chain)</option>
-            <option value="Infant Nutrition">🍼 Infant Nutrition & Medical Kits</option>
+            <option value="Insulin/Blood">🩸 Insulin &amp; Blood Products (Urgent Cold-Chain)</option>
+            <option value="Infant Nutrition">🍼 Infant Nutrition &amp; Medical Kits</option>
             <option value="Clean Water">💧 Clean Water Containers</option>
             <option value="General">📦 General Emergency Rations</option>
           </select>
         </div>
-
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3);">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);">
           <div class="form-group">
             <label class="form-label" for="origin-select">Origin Hub</label>
             <select class="form-control" id="origin-select" required>
@@ -251,7 +206,6 @@
               <option value="Hub Charlie">Hub Charlie (Coastal Base)</option>
             </select>
           </div>
-
           <div class="form-group">
             <label class="form-label" for="dest-select">Destination Shelter</label>
             <select class="form-control" id="dest-select" required>
@@ -261,10 +215,9 @@
             </select>
           </div>
         </div>
-
-        <div style="display: flex; gap: var(--space-3); margin-top: var(--space-4);">
-          <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="convoyDispatch.closeNewConvoyModal()">Cancel</button>
-          <button type="submit" class="btn btn-primary" style="flex: 2;">AUTHORIZE & DISPATCH CONVOY →</button>
+        <div style="display:flex;gap:var(--space-3);margin-top:var(--space-4);">
+          <button type="button" class="btn btn-secondary" style="flex:1;" onclick="convoyDispatch.closeNewConvoyModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" style="flex:2;">Authorize &amp; Dispatch Convoy →</button>
         </div>
       </form>
     </div>
@@ -274,7 +227,18 @@
   <script src="js/auth.js"></script>
   <script src="js/statusBadge.js"></script>
   <script src="js/toast.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/socket.js"></script>
   <script src="js/api.js"></script>
+  <script src="js/shared/search.js"></script>
+  <script src="js/shared/a11y.js"></script>
+  <script src="js/shared/freshness.js"></script>
+  <script src="js/shared/loading.js"></script>
+  <script src="js/shared/empty.js"></script>
+  <script src="js/shared/error.js"></script>
+  <script src="js/shared/copy.js"></script>
+  <script src="js/offlineQueue.js"></script>
+  <script src="js/globalSearch.js"></script>
   <script src="js/navbar.js"></script>
   <script src="js/pages/convoyDispatch.js"></script>
 

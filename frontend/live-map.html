@@ -235,13 +235,10 @@
       </div>
 
       <div class="panel-body" id="inspector-content">
-        <div style="text-align: center; padding: var(--space-6) 0; color: var(--slate-500);">
-          <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="margin-bottom: 8px;">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"/>
-            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"/>
-          </svg>
-          <p style="font-size: var(--text-sm);">Click any convoy arrow, shelter, warehouse, or hazard marker on the map to inspect telemetry and issue actions.</p>
-        </div>
+        <p class="text-meta">Click any convoy arrow, hazard triangle/octagon, or shelter icon on the map to inspect live status, route recalculations, or verify field reports.</p>
+        <button class="btn btn-destructive" style="width: 100%; margin-top: var(--space-4);" onclick="liveMap.openRoadBlockModal()">
+          🛑 BLOCK A ROAD SEGMENT
+        </button>
       </div>
     </aside>
   </div>
@@ -295,7 +292,18 @@
   <script src="js/auth.js"></script>
   <script src="js/statusBadge.js"></script>
   <script src="js/toast.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/socket.js"></script>
   <script src="js/api.js"></script>
+  <script src="js/shared/search.js"></script>
+  <script src="js/shared/a11y.js"></script>
+  <script src="js/shared/freshness.js"></script>
+  <script src="js/shared/loading.js"></script>
+  <script src="js/shared/empty.js"></script>
+  <script src="js/shared/error.js"></script>
+  <script src="js/shared/copy.js"></script>
+  <script src="js/offlineQueue.js"></script>
+  <script src="js/globalSearch.js"></script>
   <script src="js/navbar.js"></script>
   <script src="js/pages/liveMap.js"></script>
 

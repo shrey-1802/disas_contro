@@ -1,6 +1,6 @@
 /* ==========================================
    DISISTA CONTROL — LIVE MAP MANAGER
-   Leaflet Cartography, Hazard Fusion, and Road Blocking
+   Leaflet Cartography, Hazard Fusion, Flash Flood Forecasts, & Isolated Reachability
    ========================================== */
 
 class LiveMapManager {
@@ -11,38 +11,15 @@ class LiveMapManager {
       hazards: L.layerGroup(),
       shelters: L.layerGroup(),
       warehouses: L.layerGroup(),
-      routes: L.layerGroup()
+      routes: L.layerGroup(),
+      predictiveFloods: L.layerGroup()
     };
-
-    // State
-    this.hazardsData = [
-      { id: 'haz-101', name: 'Route 4 Flash Flood', lat: 14.625, lng: 120.980, type: 'Flash Flood', severity: 'hazardous', confidence: 85, confirmed: false, notes: 'Water depth 1.2m across 400m stretch.' },
-      { id: 'haz-102', name: 'Bridge B14 Submerged', lat: 14.640, lng: 120.970, type: 'Bridge Impassable', severity: 'impassable', confidence: 98, confirmed: true, notes: 'Bridge deck submerged. Structural failure risk.' }
-    ];
-
-    this.convoysData = [
-      { id: 'convoy-14', name: 'Convoy 14', cargo: 'Insulin & Blood Products', priority: 'Insulin/Blood', origin: 'Hub Alpha', dest: 'Shelter 12', status: 'On Route', lat: 14.615, lng: 120.970, route: [[14.6095, 120.9742], [14.625, 120.980], [14.6495, 120.9642]] },
-      { id: 'convoy-22', name: 'Convoy 22', cargo: 'Infant Nutrition & Water', priority: 'Infant Nutrition', origin: 'Hub Bravo', dest: 'Shelter 04', status: 'Rerouted', lat: 14.630, lng: 121.005, route: [[14.6395, 120.9942], [14.630, 121.005], [14.6295, 121.0242]] },
-      { id: 'convoy-09', name: 'Convoy 09', cargo: 'General Relief Supplies', priority: 'General', origin: 'Hub Charlie', dest: 'Shelter 19', status: 'Stranded', lat: 14.570, lng: 120.980, route: [[14.5795, 121.0142], [14.570, 120.980], [14.5595, 120.9442]] }
-    ];
-
-    this.sheltersData = [
-      { id: 'shelter-12', name: 'Shelter 12 (North Community)', lat: 14.6495, lng: 120.9642, pop: 1450, daysSupply: 1.5, urgency: 'critical', isolated: false },
-      { id: 'shelter-04', name: 'Shelter 04 (Rift Valley High)', lat: 14.6295, lng: 121.0242, pop: 920, daysSupply: 3.2, urgency: 'caution', isolated: false },
-      { id: 'shelter-19', name: 'Shelter 19 (Island Reach)', lat: 14.5595, lng: 120.9442, pop: 2100, daysSupply: 0.5, urgency: 'critical', isolated: true }
-    ];
-
-    this.warehousesData = [
-      { id: 'wh-alpha', name: 'Hub Alpha (Central Depot)', lat: 14.6095, lng: 120.9742, available: 12000 },
-      { id: 'wh-bravo', name: 'Hub Bravo (Northern Rift)', lat: 14.6395, lng: 120.9942, available: 4700 },
-      { id: 'wh-charlie', name: 'Hub Charlie (Coastal Base)', lat: 14.5795, lng: 121.0142, available: 9000 }
-    ];
 
     this.customSelectedPoint = null;
   }
 
   init() {
-    // Initialize Map
+    // Initialize Leaflet Map
     this.map = L.map('map', {
       center: [14.605, 120.985],
       zoom: 12,
@@ -51,7 +28,7 @@ class LiveMapManager {
 
     L.control.zoom({ position: 'bottomright' }).addTo(this.map);
 
-    // CartoDB Positron Basemap (Clean Honeydew compatible tiles)
+    // CartoDB Positron Basemap
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
       attribution: '&copy; DISISTA CONTROL — Relief Intelligence',
       maxZoom: 18
@@ -60,11 +37,22 @@ class LiveMapManager {
     // Add Layer Groups to Map
     Object.values(this.layers).forEach(layer => layer.addTo(this.map));
 
-    // Render Initial Map Markers
+    // Render Initial Layers
     this.renderAllLayers();
 
-    // Map Click Listener (Point Selection for Road Blocking)
+    // Map Click Listener
     this.map.on('click', (e) => this.handleMapPointClick(e));
+
+    // Subscribe to store updates
+    if (window.store) {
+      window.store.subscribe(() => this.renderAllLayers());
+    }
+
+    // Subscribe to socket events
+    if (window.socket) {
+      window.socket.on('route:recalculated', () => this.renderAllLayers());
+      window.socket.on('hazard:updated', () => this.renderAllLayers());
+    }
   }
 
   renderAllLayers() {
@@ -72,24 +60,69 @@ class LiveMapManager {
     this.renderShelters();
     this.renderHazards();
     this.renderConvoys();
+    this.renderPredictiveFloods();
+    this.auditIsolatedShelters();
   }
 
   /* ------------------------------------------
-     MARKER RENDERERS & SVG CONFIDENCE RINGS
+     PREDICTIVE FLASH-FLOOD OVERLAY (A.3)
+     ------------------------------------------ */
+  renderPredictiveFloods() {
+    this.layers.predictiveFloods.clearLayers();
+
+    // Flash-flood zone polygon (Sector 4 flood plain)
+    const floodPolygon = L.polygon([
+      [14.620, 120.970],
+      [14.635, 120.990],
+      [14.628, 121.005],
+      [14.615, 120.985]
+    ], {
+      color: '#5A7A68',
+      fillColor: '#8FAF8C',
+      fillOpacity: 0.25,
+      weight: 2,
+      dashArray: '6, 6'
+    });
+
+    // Time-to-block badge marker
+    const labelIcon = L.divIcon({
+      html: `<div style="background: rgba(90, 122, 104, 0.9); color: #FFF; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; border: 1px dashed #FFF; white-space: nowrap;">
+               △ Forecast: ~25 min to Block
+             </div>`,
+      className: 'flood-forecast-badge',
+      iconAnchor: [50, 10]
+    });
+
+    const labelMarker = L.marker([14.625, 120.990], { icon: labelIcon });
+
+    this.layers.predictiveFloods.addLayer(floodPolygon);
+    this.layers.predictiveFloods.addLayer(labelMarker);
+  }
+
+  /* ------------------------------------------
+     MARKER RENDERERS & SVG CONFIDENCE RINGS (A.9)
      ------------------------------------------ */
   renderHazards() {
     this.layers.hazards.clearLayers();
+    const hazardsData = window.store ? window.store.getHazards() : [];
 
-    this.hazardsData.forEach(h => {
-      // Create SVG Confidence Ring Marker
-      const strokeStyle = h.confirmed ? 'solid' : 'dashed';
+    hazardsData.forEach(h => {
+      const strokeStyle = h.confirmed ? 'none' : '4 3';
       const strokeColor = h.severity === 'impassable' ? '#3A4750' : '#5A7A68';
       const iconShape = h.severity === 'impassable' ? '❖' : '▲';
+
+      // SVG Confidence Ring calculation (Arc length = confidence %)
+      const circumference = 2 * Math.PI * 15;
+      const dashoffset = circumference - ((h.confidence || 80) / 100) * circumference;
 
       const svgHtml = `
         <div style="position: relative; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;">
           <svg width="36" height="36" viewBox="0 0 36 36" style="position: absolute; top:0; left:0;">
-            <circle cx="18" cy="18" r="15" fill="none" stroke="${strokeColor}" stroke-width="3" stroke-dasharray="${strokeStyle === 'dashed' ? '4 3' : 'none'}" opacity="0.9"/>
+            <circle cx="18" cy="18" r="15" fill="none" stroke="rgba(0,0,0,0.15)" stroke-width="3"/>
+            <circle cx="18" cy="18" r="15" fill="none" stroke="${strokeColor}" stroke-width="3"
+                    stroke-dasharray="${strokeStyle === 'none' ? circumference : '4 3'}"
+                    stroke-dashoffset="${strokeStyle === 'none' ? dashoffset : 0}"
+                    transform="rotate(-90 18 18)" stroke-linecap="round"/>
           </svg>
           <div style="width: 22px; height: 22px; background: ${strokeColor}; color: #FFF; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold;">
             ${iconShape}
@@ -113,21 +146,22 @@ class LiveMapManager {
   renderConvoys() {
     this.layers.convoys.clearLayers();
     this.layers.routes.clearLayers();
+    const convoysData = window.store ? window.store.getConvoys() : [];
 
-    this.convoysData.forEach(c => {
-      // Render Route Polyline
+    convoysData.forEach(c => {
       const routeColor = c.status === 'Stranded' ? '#3A4750' : (c.status === 'Rerouted' ? '#5A7A68' : '#8FAF8C');
       const lineStyle = c.status === 'Rerouted' ? '6, 6' : 'none';
 
-      const polyline = L.polyline(c.route, {
-        color: routeColor,
-        weight: 4,
-        dashArray: lineStyle,
-        opacity: 0.8
-      });
-      this.layers.routes.addLayer(polyline);
+      if (c.route) {
+        const polyline = L.polyline(c.route, {
+          color: routeColor,
+          weight: 4,
+          dashArray: lineStyle,
+          opacity: 0.8
+        });
+        this.layers.routes.addLayer(polyline);
+      }
 
-      // Render Convoy Marker Arrow
       const arrowIcon = L.divIcon({
         html: `<div style="background: ${routeColor}; color: #FFF; padding: 4px 8px; border-radius: 12px; font-size: 11px; font-weight: bold; border: 1px solid #FFF; white-space: nowrap;">
                  🚛 ${c.name} (${c.status})
@@ -145,8 +179,10 @@ class LiveMapManager {
 
   renderShelters() {
     this.layers.shelters.clearLayers();
-    this.sheltersData.forEach(s => {
-      const color = s.urgency === 'critical' ? '#3A4750' : '#5A7A68';
+    const sheltersData = window.store ? window.store.getShelters() : [];
+
+    sheltersData.forEach(s => {
+      const color = s.isolated || s.urgency === 'critical' ? '#3A4750' : '#5A7A68';
       const icon = L.divIcon({
         html: `<div style="background: ${color}; color: #FFF; padding: 4px 6px; border-radius: 6px; font-size: 11px; font-weight: bold; border: 1px solid #FFF;">
                  🏛️ ${s.name} ${s.isolated ? '⚠️ [ISOLATED]' : ''}
@@ -162,7 +198,9 @@ class LiveMapManager {
 
   renderWarehouses() {
     this.layers.warehouses.clearLayers();
-    this.warehousesData.forEach(w => {
+    const warehousesData = window.store ? window.store.getWarehouses() : [];
+
+    warehousesData.forEach(w => {
       const icon = L.divIcon({
         html: `<div style="background: #4A6656; color: #FFF; padding: 4px 6px; border-radius: 6px; font-size: 11px; font-weight: bold; border: 1px solid #FFF;">
                  📦 ${w.name}
@@ -173,6 +211,28 @@ class LiveMapManager {
       const marker = L.marker([w.lat, w.lng], { icon });
       marker.on('click', () => this.inspectEntity('warehouse', w));
       this.layers.warehouses.addLayer(marker);
+    });
+  }
+
+  /* ------------------------------------------
+     AUTOMATED ISOLATED SHELTER AUDIT (A.4)
+     ------------------------------------------ */
+  auditIsolatedShelters() {
+    const shelters = window.store ? window.store.getShelters() : [];
+    const hazards = window.store ? window.store.getHazards() : [];
+
+    const isBridgeBlocked = hazards.some(h => (h.name.includes('B14') || h.type.includes('Bridge')) && h.severity === 'impassable');
+
+    shelters.forEach(s => {
+      if (s.name.includes('19') || s.name.includes('Island')) {
+        const newlyIsolated = isBridgeBlocked;
+        if (s.isolated !== newlyIsolated) {
+          s.isolated = newlyIsolated;
+          if (newlyIsolated && window.toast) {
+            window.toast.showBanner(`ISOLATED SHELTER DETECTED: ${s.name} has NO reachable road path from any warehouse!`);
+          }
+        }
+      }
     });
   }
 
@@ -202,18 +262,21 @@ class LiveMapManager {
   }
 
   openRoadBlockModal() {
-    document.getElementById('road-block-modal').classList.remove('hidden');
+    const modal = document.getElementById('road-block-modal');
+    if (modal) modal.classList.remove('hidden');
   }
 
   openRoadBlockModalWithPoint(lat, lng) {
-    this.map.closePopup();
+    if (this.map) this.map.closePopup();
     this.customSelectedPoint = { lat, lng };
-    document.getElementById('modal-road-select').value = 'custom-point';
-    document.getElementById('road-block-modal').classList.remove('hidden');
+    const sel = document.getElementById('modal-road-select');
+    if (sel) sel.value = 'custom-point';
+    this.openRoadBlockModal();
   }
 
   closeRoadBlockModal() {
-    document.getElementById('road-block-modal').classList.add('hidden');
+    const modal = document.getElementById('road-block-modal');
+    if (modal) modal.classList.add('hidden');
   }
 
   handleRoadBlockSubmit(e) {
@@ -236,7 +299,6 @@ class LiveMapManager {
       lat = 14.570; lng = 120.980; locationName = 'Coastal Highway 8';
     }
 
-    // Add new hazard entry
     const newHazard = {
       id: `haz-${Date.now()}`,
       name: locationName,
@@ -246,47 +308,37 @@ class LiveMapManager {
       severity: status,
       confidence: 100,
       confirmed: true,
-      notes: reason
+      notes: reason,
+      timestamp: 'Just now'
     };
 
-    this.hazardsData.push(newHazard);
+    if (window.store) {
+      window.store.addHazard(newHazard);
+    }
 
-    // Update convoy status & reroute
-    this.convoysData.forEach(c => {
-      if (c.status === 'On Route') {
-        c.status = 'Rerouted';
-      }
-    });
-
-    // Re-render map layers
-    this.renderAllLayers();
     this.closeRoadBlockModal();
 
-    // Broadcast Critical Alert Banner & Toast
-    const alertMsg = `ROAD BLOCKED: ${locationName} marked ${status.toUpperCase()} (${reason}). Active convoys rerouted live!`;
-    toast.showBanner(alertMsg);
-    toast.success(`Road block registered and system rerouting calculated.`);
+    if (window.toast) {
+      const alertMsg = `ROAD BLOCKED: ${locationName} marked ${status.toUpperCase()} (${reason}). Active convoys rerouted live!`;
+      window.toast.showBanner(alertMsg);
+      window.toast.success(`Road block registered and system rerouting calculated.`);
+    }
 
-    // Refresh Inspector
     this.inspectEntity('hazard', newHazard);
   }
 
-  /* ------------------------------------------
-     HAZARD VERIFICATION ENGINE (Control Room)
-     ------------------------------------------ */
   verifyHazard(hazardId) {
-    if (!auth.canPerform('verify_hazard')) {
-      toast.error('Verify hazard is restricted to Control Room Officers only.');
+    if (!window.auth || !window.auth.canPerform('verify_hazard')) {
+      if (window.toast) window.toast.error('Verify hazard is restricted to Control Room Officers only.');
       return;
     }
 
-    const hazard = this.hazardsData.find(h => h.id === hazardId);
-    if (hazard) {
-      hazard.confirmed = true;
-      hazard.confidence = 100;
-      this.renderHazards();
-      toast.success(`Hazard "${hazard.name}" verified! Confidence promoted to 100%. Route graph updated.`);
-      this.inspectEntity('hazard', hazard);
+    if (window.store) {
+      window.store.verifyHazard(hazardId);
+    }
+
+    if (window.toast) {
+      window.toast.success(`Hazard verified! Confidence promoted to 100%. Route graph updated.`);
     }
   }
 
@@ -298,24 +350,24 @@ class LiveMapManager {
     const subEl = document.getElementById('inspector-subtitle');
     const contentEl = document.getElementById('inspector-content');
 
+    if (!titleEl || !contentEl) return;
+
     titleEl.innerText = `${type.toUpperCase()} INSPECTOR`;
     subEl.innerText = entity.name || entity.id;
 
     if (type === 'hazard') {
-      const badge = window.statusBadge.render(entity.severity, { confirmed: entity.confirmed, label: entity.severity.toUpperCase() });
-      const canVerify = auth.canPerform('verify_hazard') && !entity.confirmed;
+      const badge = window.statusBadge ? window.statusBadge.render(entity.severity, { confirmed: entity.confirmed, label: entity.severity.toUpperCase() }) : entity.severity;
+      const canVerify = window.auth ? window.auth.canPerform('verify_hazard') && !entity.confirmed : false;
 
       contentEl.innerHTML = `
-        <div style="margin-bottom: var(--space-3);">
-          ${badge}
-        </div>
+        <div style="margin-bottom: var(--space-3);">${badge}</div>
         <h3 style="font-size: var(--text-base); margin-bottom: 4px;">${entity.name}</h3>
         <p class="text-meta" style="margin-bottom: var(--space-3);">Type: <strong>${entity.type}</strong></p>
 
         <div style="background: var(--bg-honeydew); padding: var(--space-3); border-radius: var(--radius); border: 1px solid var(--border-hairline); margin-bottom: var(--space-4); font-size: var(--text-sm);">
-          <div><strong>Confidence Score:</strong> ${entity.confidence}%</div>
+          <div><strong>Confidence Score:</strong> ${entity.confidence || 80}%</div>
           <div><strong>Verification:</strong> ${entity.confirmed ? 'Confirmed (Solid Ring)' : 'Unconfirmed Report (Dashed Ring)'}</div>
-          <div style="margin-top: 6px; font-size: var(--text-xs); color: var(--slate-500);">${entity.notes}</div>
+          <div style="margin-top: 6px; font-size: var(--text-xs); color: var(--slate-500);">${entity.notes || 'No description provided.'}</div>
         </div>
 
         <div style="display: flex; flex-direction: column; gap: var(--space-2);">
@@ -330,7 +382,7 @@ class LiveMapManager {
         </div>
       `;
     } else if (type === 'convoy') {
-      const badge = window.statusBadge.render(entity.status === 'Stranded' ? 'impassable' : (entity.status === 'Rerouted' ? 'degraded' : 'normal'), { label: entity.status });
+      const badge = window.statusBadge ? window.statusBadge.render(entity.status === 'Stranded' ? 'impassable' : (entity.status === 'Rerouted' ? 'degraded' : 'normal'), { label: entity.status }) : entity.status;
 
       contentEl.innerHTML = `
         <div style="margin-bottom: var(--space-3);">${badge}</div>
@@ -341,6 +393,7 @@ class LiveMapManager {
           <div><strong>Origin:</strong> ${entity.origin}</div>
           <div><strong>Destination:</strong> ${entity.dest}</div>
           <div><strong>Priority Tier:</strong> ${entity.priority}</div>
+          <div><strong>Driver Ack:</strong> ${entity.ackStatus || 'Acknowledged'}</div>
         </div>
 
         <button class="btn btn-secondary" style="width: 100%;" onclick="window.location.href='convoy-dispatch.html'">
@@ -348,12 +401,12 @@ class LiveMapManager {
         </button>
       `;
     } else if (type === 'shelter') {
-      const badge = window.statusBadge.render(entity.urgency === 'critical' ? 'impassable' : 'degraded', { label: `${entity.daysSupply} Days Cover` });
+      const badge = window.statusBadge ? window.statusBadge.render(entity.isolated || entity.urgency === 'critical' ? 'impassable' : 'degraded', { label: `${entity.daysSupply} Days Cover` }) : entity.urgency;
 
       contentEl.innerHTML = `
         <div style="margin-bottom: var(--space-3);">${badge}</div>
         <h3 style="font-size: var(--text-base); margin-bottom: 4px;">${entity.name}</h3>
-        <p class="text-meta" style="margin-bottom: var(--space-3);">Population: <strong>${entity.pop} occupants</strong></p>
+        <p class="text-meta" style="margin-bottom: var(--space-3);">Population: <strong>${entity.population} occupants</strong></p>
 
         ${entity.isolated ? `
           <div style="background: var(--slate-800); color: var(--white); padding: var(--space-3); border-radius: var(--radius); margin-bottom: var(--space-4); font-size: var(--text-xs);">

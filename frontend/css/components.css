@@ -328,3 +328,233 @@
 .data-table tbody tr:hover {
   background-color: var(--sage-100);
 }
+
+/* ------------------------------------------
+   7. BULK ACTION BAR
+   ------------------------------------------ */
+.bulk-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--forest-700);
+  color: var(--white);
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius);
+  margin-bottom: var(--space-3);
+}
+.bulk-action-bar.hidden { display: none; }
+
+/* ------------------------------------------
+   8. GLOBAL SEARCH MODAL (Ctrl+K)
+   ------------------------------------------ */
+.global-search-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 9000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 80px;
+}
+.global-search-overlay.hidden { display: none; }
+.global-search-modal {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-hairline);
+  width: min(640px, 94vw);
+  max-height: 420px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 12px 36px rgba(0,0,0,0.18);
+}
+.global-search-input-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border-hairline);
+}
+.global-search-input-row input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: var(--text-base);
+  font-family: var(--font-sans);
+  background: transparent;
+  color: var(--slate-800);
+}
+.global-search-results {
+  overflow-y: auto;
+  padding: var(--space-2);
+  max-height: 340px;
+}
+.search-result-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  transition: background var(--motion-fast) var(--ease);
+}
+.search-result-item:hover,
+.search-result-item.active {
+  background: var(--bg-honeydew);
+}
+.search-result-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--sage-100);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+.search-result-title { font-weight: 600; color: var(--slate-800); }
+.search-result-sub   { font-size: var(--text-xs); color: var(--slate-500); margin-top: 2px; }
+
+/* ------------------------------------------
+   9. SKELETON LOADERS (Phase 14)
+   ------------------------------------------ */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ------------------------------------------
+   10. EMPTY STATES (Phase 15)
+   ------------------------------------------ */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 20px;
+  text-align: center;
+  color: var(--slate-500);
+}
+.empty-state-icon { font-size: 36px; margin-bottom: 8px; }
+.empty-state-title { font-size: 16px; color: var(--slate-800); margin-bottom: 4px; font-weight: 600; }
+.empty-state-msg   { font-size: 13px; max-width: 380px; line-height: 1.5; }
+
+/* ------------------------------------------
+   11. ERROR STATES (Phase 16)
+   ------------------------------------------ */
+.error-inline-banner {
+  background: var(--bg-honeydew);
+  border: 1px solid var(--forest-600);
+  border-left: 4px solid var(--forest-600);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  font-size: var(--text-sm);
+  color: var(--slate-800);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ------------------------------------------
+   12. SEARCH BAR & FILTER CHIPS (Phase 17)
+   ------------------------------------------ */
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--white);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius);
+  padding: 8px 14px;
+  transition: border-color var(--motion-fast) var(--ease);
+}
+.search-bar:focus-within { border-color: var(--forest-600); }
+.search-bar input {
+  border: none;
+  outline: none;
+  font-size: var(--text-sm);
+  font-family: var(--font-sans);
+  background: transparent;
+  color: var(--slate-800);
+  width: 100%;
+}
+.filter-chips-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--sage-100);
+  border: 1px solid var(--border-hairline);
+  border-radius: 20px;
+  padding: 2px 10px;
+  font-size: 12px;
+  color: var(--slate--800);
+}
+mark.search-highlight {
+  background: rgba(143, 175, 140, 0.4);
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+/* ------------------------------------------
+   13. ACCESSIBILITY — FOCUS, SKIP LINK, ARIA (Phase 18)
+   ------------------------------------------ */
+:focus-visible {
+  outline: 2px solid var(--forest-600);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+/* Minimum 44×44px touch targets (enforced on btn already) */
+button, a, [role="button"] { touch-action: manipulation; }
+
+/* ------------------------------------------
+   14. MULTILINGUAL LAYOUT GUARDS (Phase 19)
+   ------------------------------------------ */
+.btn { min-width: 80px; white-space: normal; word-break: break-word; }
+.badge { word-break: break-word; }
+
+/* ------------------------------------------
+   15. FRESHNESS BADGES
+   ------------------------------------------ */
+.freshness-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+.freshness-badge--live    { background: rgba(143,175,140,0.25); color: var(--forest-700); }
+.freshness-badge--recent  { background: rgba(90,122,104,0.15);  color: var(--forest-600); }
+.freshness-badge--stale   { background: rgba(58,71,80,0.1);     color: var(--slate-500);  }
+.freshness-badge--unknown { background: var(--sage-100);        color: var(--slate-500);  }
+
+/* ------------------------------------------
+   16. OFFLINE BANNER (auto-injected by error.js)
+   ------------------------------------------ */
+#offline-banner { font-family: var(--font-sans); }
+
+
+/* ACCESSIBILITY: REDUCED MOTION OVERRIDE */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

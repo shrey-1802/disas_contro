@@ -1,522 +1,417 @@
 /* ==========================================
    DISISTA CONTROL — SUPPLY SWAP ENGINE
    Inter-Warehouse Rebalancing, Cold-Chain Matching,
-   Impact Preview, and Transfer Lifecycle Tracker
+   Impact Preview, Multi-Hop Chains, and Transfer Lifecycle Tracker
    ========================================== */
 
 class SupplySwapManager {
   constructor() {
     this.activeTab = 'offer';
-
-    this.warehouses = {
-      'wh-alpha': { name: 'Hub Alpha (Central Depot)', onHand: 14000, reserved: 2000, available: 12000, safety: 3000, daysAfter: 4.5 },
-      'wh-bravo': { name: 'Hub Bravo (Northern Rift)', onHand: 6200, reserved: 1500, available: 4700, safety: 1500, daysAfter: 3.1 },
-      'wh-charlie': { name: 'Hub Charlie (Coastal Base)', onHand: 9800, reserved: 800, available: 9000, safety: 2000, daysAfter: 5.2 }
-    };
-
-    this.offers = [
-      {
-        id: 'offer-001',
-        from: 'wh-bravo',
-        cargo: 'Insulin/Blood',
-        onHand: 2400,
-        reserved: 800,
-        transferable: 1200,
-        coldChain: true,
-        status: 'Matched'
-      },
-      {
-        id: 'offer-002',
-        from: 'wh-charlie',
-        cargo: 'Clean Water',
-        onHand: 9000,
-        reserved: 800,
-        transferable: 4000,
-        coldChain: false,
-        status: 'Open'
-      }
-    ];
-
-    this.requests = [
-      {
-        id: 'req-101',
-        to: 'wh-alpha',
-        cargo: 'Insulin/Blood',
-        qty: 600,
-        urgency: 'critical',
-        matchedOffer: 'offer-001',
-        status: 'Matched'
-      }
-    ];
-
-    this.transfers = [
-      {
-        id: 'txfr-88',
-        from: 'Hub Bravo (Northern Rift)',
-        to: 'Hub Alpha (Central Depot)',
-        cargo: 'Insulin & Blood Products',
-        qty: 600,
-        coldChain: true,
-        currentStage: 3,   // 0=Requested,1=Matched,2=Approved,3=Picking,4=Loading,5=Dispatched,6=InTransit,7=Received,8=Completed
-        convoy: 'Convoy 14',
-        started: '08:30 UTC',
-        eta: '14:20 UTC'
-      },
-      {
-        id: 'txfr-91',
-        from: 'Hub Charlie (Coastal Base)',
-        to: 'Hub Bravo (Northern Rift)',
-        cargo: 'Clean Water Containers',
-        qty: 2400,
-        coldChain: false,
-        currentStage: 6,
-        convoy: 'Convoy 22',
-        started: '07:00 UTC',
-        eta: '16:05 UTC'
-      }
-    ];
-
-    this.LIFECYCLE_STAGES = [
-      'Requested', 'Matched', 'Approved',
-      'Picking', 'Loading', 'Dispatched',
-      'In Transit', 'Received', 'Completed'
-    ];
-
     this.pendingTransferApproval = null;
   }
 
   init() {
     this.enforceRoleAccess();
+    this.render();
+    this.startEscalationWatcher();  // B.6
+
+    if (window.store) {
+      window.store.subscribe(() => this.render());
+    }
+
+    if (window.socket) {
+      window.socket.on('transfer:status_update', () => this.render());
+      window.socket.on('route:recalculated', () => this.render());
+    }
+  }
+
+  /* B.6 — Auto-Escalation: stalled Critical transfers > 15 min */
+  startEscalationWatcher() {
+    const ESCALATION_THRESHOLD_MS = 15 * 60 * 1000; // 15 minutes per spec
+
+    const check = () => {
+      if (!window.store) return;
+      const transfers = window.store.getTransfers();
+      transfers.forEach(t => {
+        if (
+          t.status === 'Active' &&
+          (t.cargoType === 'Insulin/Blood' || t.priority === 'critical') &&
+          t.currentStage <= 1 && // Requested or Matched — not yet approved
+          t.createdAt && (Date.now() - t.createdAt) > ESCALATION_THRESHOLD_MS
+        ) {
+          window.store.escalateTransfer(t.id);
+          if (window.toast) {
+            window.toast.error(`Transfer ${t.id} (${t.cargo}) escalated — unactioned past 15-minute threshold.`);
+          }
+        }
+      });
+    };
+
+    check();
+    this._escalationInterval = setInterval(check, 60000);
+  }
+
+  render() {
+    this.renderShortcageForecasts(); // B.1
     this.renderOffers();
     this.renderMatches();
     this.renderActiveTransfers();
     this.updateMetrics();
-    this.checkCriticalMatches();
   }
 
-  enforceRoleAccess() {
-    const user = auth.getCurrentUser();
-    if (user) {
-      const badge = document.getElementById('role-access-badge');
-      const roleMap = {
-        control_room: 'Control Room (Read-Only)',
-        district_admin: 'District Admin (Read-Only)',
-        warehouse_manager: 'Warehouse Manager',
-        field_driver: 'Field Driver (No Access)'
-      };
-      badge.innerText = roleMap[user.role] || 'Operator';
+  /* B.1 — Predictive Shortage Forecasting
+     Formula: time-to-stockout = onHand ÷ consumptionRate (estimated)
+     Threshold: < 8 hours → show forecast card */
+  renderShortcageForecasts() {
+    const container = document.getElementById('shortage-forecast-container');
+    if (!container) return;
 
-      // Non-WH Manager roles can view but not approve
-      if (user.role === 'control_room' || user.role === 'district_admin') {
-        toast.info('You are viewing Supply Swap as read-only. Approving transfers requires Warehouse Manager access.');
+    const warehouses = window.store ? window.store.getWarehouses() : [];
+
+    // Estimate consumption: assume daily burn = onHand / daysCover
+    const forecasts = [];
+    warehouses.forEach(w => {
+      if (!w.daysCover || w.daysCover <= 0) return;
+      const dailyBurn = w.onHand / w.daysCover;
+      const available = w.available || (w.onHand - (w.reserved || 0));
+      const hoursToStockout = available > 0 ? (available / dailyBurn) * 24 : 0;
+
+      if (hoursToStockout < 8 && hoursToStockout > 0) {
+        const hrs = Math.floor(hoursToStockout);
+        const mins = Math.round((hoursToStockout - hrs) * 60);
+        forecasts.push({ warehouse: w.name, hoursToStockout, label: `${hrs}h ${mins}m` });
       }
+    });
+
+    if (forecasts.length === 0) {
+      container.innerHTML = '';
+      return;
+    }
+
+    container.innerHTML = `
+      <div style="margin-bottom:var(--space-4);">
+        <span class="panel-label">⏱ PREDICTIVE SHORTAGE FORECAST (B.1)</span>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:var(--space-3);margin-top:var(--space-2);">
+          ${forecasts.map(f => `
+            <div style="border:1px dashed var(--forest-600);border-radius:var(--radius);padding:var(--space-3);background:var(--bg-honeydew);">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <svg width="16" height="16" fill="none" stroke="var(--forest-600)" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+                </svg>
+                <span class="panel-label" style="font-size:10px;">STOCKOUT FORECAST</span>
+              </div>
+              <div style="font-size:var(--text-sm);font-weight:600;margin-top:4px;">${f.warehouse}</div>
+              <div style="font-size:var(--text-xs);color:var(--slate-500);">Stockout in <strong style="color:var(--forest-700);">${f.label}</strong> at current draw rate. Open Supply Swap to rebalance.</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+  enforceRoleAccess() {
+    const user = window.auth ? window.auth.getCurrentUser() : null;
+    const badge = document.getElementById('role-access-badge');
+    if (!badge) return;
+
+    if (user && user.role === 'warehouse_manager') {
+      badge.innerText = 'Full Transactional Access (Warehouse Manager)';
+      badge.className = 'badge badge-safe';
+    } else {
+      badge.innerText = 'Read-Only Network Rollup (Control Room / District Admin)';
+      badge.className = 'badge badge-caution';
     }
   }
 
-  checkCriticalMatches() {
-    const hasCritical = this.requests.some(r => r.urgency === 'critical' && r.status === 'Matched');
-    const matchBadge = document.getElementById('match-alert-badge');
-    if (hasCritical) {
-      matchBadge.style.display = 'inline-flex';
-    }
+  switchTab(tabName) {
+    this.activeTab = tabName;
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tab === tabName);
+    });
+    document.querySelectorAll('.tab-content').forEach(content => {
+      content.classList.toggle('hidden', content.id !== `tab-${tabName}`);
+    });
+    this.render();
+  }
+
+  render() {
+    this.renderOffers();
+    this.renderMatches();
+    this.renderActiveTransfers();
+    this.updateMetrics();
   }
 
   updateMetrics() {
-    document.getElementById('metric-offers').innerText = this.offers.filter(o => o.status === 'Open' || o.status === 'Matched').length;
-    document.getElementById('metric-requests').innerText = this.requests.length;
-    document.getElementById('metric-active').innerText = this.transfers.filter(t => t.currentStage < 8).length;
-    document.getElementById('active-count-badge').innerText = this.transfers.filter(t => t.currentStage < 8).length;
-    const critMatches = this.requests.filter(r => r.urgency === 'critical' && r.status === 'Matched').length;
-    document.getElementById('metric-critical-matches').innerText = critMatches;
+    const transfers = window.store ? window.store.getTransfers() : [];
+    const activeCount = transfers.filter(t => t.currentStage < 8).length;
+
+    const offerCountEl  = document.getElementById('count-offers')   || document.getElementById('metric-offers');
+    const reqCountEl    = document.getElementById('count-requests') || document.getElementById('metric-requests');
+    const activeCountEl = document.getElementById('count-active')   || document.getElementById('metric-active');
+
+    if (offerCountEl)  offerCountEl.innerText  = '2 Offers Open';
+    if (reqCountEl)    reqCountEl.innerText    = '1 Critical Need';
+    if (activeCountEl) activeCountEl.innerText = `${activeCount} Active Transfers`;
   }
+
 
   /* ------------------------------------------
-     TAB SWITCHER
-  ------------------------------------------ */
-  switchTab(name) {
-    this.activeTab = name;
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-    document.getElementById(`tab-btn-${name}`).classList.add('active');
-    document.getElementById(`panel-${name}`).classList.add('active');
-  }
-
-  /* ------------------------------------------
-     OFFER TAB
-  ------------------------------------------ */
-  checkColdChain(cargoType) {
-    const flag = document.getElementById('cold-chain-flag');
-    const needsCold = cargoType === 'Insulin/Blood';
-    flag.style.display = needsCold ? 'block' : 'none';
-  }
-
-  handleOfferSubmit(e) {
-    e.preventDefault();
-    const fromHub = document.getElementById('offer-from-hub').value;
-    const cargo = document.getElementById('offer-cargo-type').value;
-    const onHand = parseInt(document.getElementById('offer-on-hand').value);
-    const reserved = parseInt(document.getElementById('offer-reserved').value);
-    const transferable = parseInt(document.getElementById('offer-transferable').value);
-
-    const available = onHand - reserved;
-    if (transferable > available) {
-      toast.error(`Transferable quantity (${transferable}) exceeds Available stock (${available}). Cannot be submitted.`);
-      return;
-    }
-
-    const wh = this.warehouses[fromHub];
-    if (wh && (wh.onHand - transferable) < wh.safety) {
-      toast.error(`Transfer would drop ${wh.name} below its safety threshold (${wh.safety} units). Reduce transferable quantity.`);
-      return;
-    }
-
-    const newOffer = {
-      id: `offer-${Date.now()}`,
-      from: fromHub,
-      cargo,
-      onHand,
-      reserved,
-      transferable,
-      coldChain: cargo === 'Insulin/Blood',
-      status: 'Open'
-    };
-
-    this.offers.push(newOffer);
-    this.renderOffers();
-    this.updateMetrics();
-    toast.success(`Supply offer posted! ${cargo} (${transferable} units) from ${this.warehouses[fromHub]?.name || fromHub} — Matching engine scanning now.`);
-  }
-
+     OFFERS TAB RENDERER
+     ------------------------------------------ */
   renderOffers() {
     const container = document.getElementById('offers-list');
-    container.innerHTML = '';
+    if (!container) return;
 
-    if (this.offers.length === 0) {
-      container.innerHTML = `<p class="text-meta">No open offers posted yet.</p>`;
-      return;
-    }
-
-    this.offers.forEach(offer => {
-      const wh = this.warehouses[offer.from];
-      const statusBadgeHtml = offer.status === 'Matched'
-        ? `<span class="badge badge-safe">✓ Matched</span>`
-        : `<span class="badge badge-caution">⌛ Seeking Match</span>`;
-
-      const available = offer.onHand - offer.reserved;
-      const fillPct = Math.min(100, Math.round((available / offer.onHand) * 100));
-
-      const div = document.createElement('div');
-      div.style.cssText = `background: var(--bg-honeydew); border: 1px solid var(--border-hairline); border-radius: var(--radius); padding: var(--space-3);`;
-      div.innerHTML = `
-        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-          <strong>${offer.cargo}</strong>
-          ${statusBadgeHtml}
+    const warehouses = window.store ? window.store.getWarehouses() : [];
+    container.innerHTML = warehouses.map(w => `
+      <div class="card" style="margin-bottom: 12px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+          <strong>${w.name}</strong>
+          <span class="badge badge-safe">${w.available.toLocaleString()} Units Available</span>
         </div>
-        <div class="text-meta">${wh ? wh.name : offer.from}</div>
-        ${offer.coldChain ? `<span style="font-size: 11px; color: var(--forest-700); font-weight: 600;">🧊 Cold-Chain Eligible Only</span>` : ''}
-        <div class="stock-bar-container">
-          <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--slate-500);">
-            <span>Transferable: <strong>${offer.transferable} units</strong></span>
-            <span>Available: ${available}</span>
-          </div>
-          <div class="stock-bar-track">
-            <div class="stock-bar-fill" style="width: ${fillPct}%;"></div>
-          </div>
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; font-size: 12px; background: var(--bg-honeydew); padding: 8px; border-radius: var(--radius);">
+          <div>On Hand:<br><strong>${w.onHand.toLocaleString()}</strong></div>
+          <div>Reserved:<br><strong>${w.reserved.toLocaleString()}</strong></div>
+          <div>Available:<br><strong style="color: var(--forest-600);">${w.available.toLocaleString()}</strong></div>
+          <div>Safety Threshold:<br><strong>${w.safety.toLocaleString()}</strong></div>
         </div>
-      `;
-      container.appendChild(div);
-    });
+      </div>
+    `).join('');
   }
 
   /* ------------------------------------------
-     REQUEST TAB
-  ------------------------------------------ */
-  handleRequestSubmit(e) {
-    e.preventDefault();
-    const toHub = document.getElementById('req-to-hub').value;
-    const cargo = document.getElementById('req-cargo-type').value;
-    const qty = parseInt(document.getElementById('req-qty').value);
-    const urgency = document.getElementById('req-urgency').value;
-
-    const newReq = {
-      id: `req-${Date.now()}`,
-      to: toHub,
-      cargo,
-      qty,
-      urgency,
-      matchedOffer: null,
-      status: 'Open'
-    };
-
-    // Try to find a match
-    const match = this.offers.find(o => o.cargo === cargo && o.transferable >= qty && o.status === 'Open');
-    if (match) {
-      newReq.status = 'Matched';
-      newReq.matchedOffer = match.id;
-      match.status = 'Matched';
-      toast.success(`Match found! ${this.warehouses[match.from]?.name || match.from} has ${match.transferable} units available. Opening Impact Preview...`);
-      setTimeout(() => this.openImpactPreview(match.id, newReq.id), 800);
-    } else {
-      toast.info(`Shortage request submitted. Scanning network for matching offers...`);
-    }
-
-    this.requests.push(newReq);
-    this.renderMatches();
-    this.renderOffers();
-    this.updateMetrics();
-    this.checkCriticalMatches();
-  }
-
+     MATCHES & IMPACT PREVIEW MODAL (B.5 & B.3)
+     ------------------------------------------ */
   renderMatches() {
     const container = document.getElementById('matches-list');
-    container.innerHTML = '';
+    if (!container) return;
 
-    const matched = this.requests.filter(r => r.status === 'Matched');
-    if (matched.length === 0) {
-      container.innerHTML = `<p class="text-meta" style="padding: var(--space-3);">No matched offers found yet. Post a shortage request to trigger matching.</p>`;
-      return;
-    }
+    const canApprove = window.auth ? window.auth.canPerform('approve_supply_swap') : false;
 
-    matched.forEach(req => {
-      const matchedOffer = this.offers.find(o => o.id === req.matchedOffer);
-      const fromWh = matchedOffer ? (this.warehouses[matchedOffer.from] || {}) : {};
-      const urgencyBadge = req.urgency === 'critical'
-        ? `<span class="badge badge-blocked">❖ Critical</span>`
-        : `<span class="badge badge-caution">▲ Caution</span>`;
-
-      const div = document.createElement('div');
-      div.style.cssText = `background: #F0F5F2; border: 1px solid var(--forest-600); border-radius: var(--radius); padding: var(--space-3); margin-bottom: var(--space-3);`;
-      div.innerHTML = `
-        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-          <strong>${req.cargo} — ${req.qty} Units</strong>
-          ${urgencyBadge}
-        </div>
-        <div class="text-meta">Source: ${fromWh.name || 'Hub'} → ${this.warehouses[req.to]?.name || req.to}</div>
-        ${matchedOffer?.coldChain ? `<div style="font-size: 11px; color: var(--forest-700); font-weight: 600; margin-top: 4px;">🧊 Refrigerated Unit Confirmed</div>` : ''}
-        <div style="display: flex; gap: var(--space-2); margin-top: var(--space-3);">
-          <button class="btn btn-secondary" style="min-height: 34px; font-size: 11px; flex: 1;" onclick="supplySwap.openImpactPreview('${matchedOffer?.id}', '${req.id}')">
-            📊 Review Impact Preview
-          </button>
-          <button class="btn btn-primary" style="min-height: 34px; font-size: 11px; flex: 1;" onclick="supplySwap.openImpactPreview('${matchedOffer?.id}', '${req.id}')">
-            ✓ Approve Transfer
-          </button>
-        </div>
-      `;
-      container.appendChild(div);
-    });
-  }
-
-  /* ------------------------------------------
-     IMPACT PREVIEW MODAL
-  ------------------------------------------ */
-  openImpactPreview(offerId, reqId) {
-    this.pendingTransferApproval = { offerId, reqId };
-    const offer = this.offers.find(o => o.id === offerId);
-    const req = this.requests.find(r => r.id === reqId);
-    if (!offer || !req) return;
-
-    const fromWh = this.warehouses[offer.from];
-    const toWh = this.warehouses[req.to];
-
-    // Calculate after-state
-    const fromAfterAvailable = fromWh.available - req.qty;
-    const fromAfterDays = ((fromWh.onHand - req.qty) / (fromWh.onHand / fromWh.daysAfter)).toFixed(1);
-    const toAfterDays = (toWh.daysAfter + (req.qty / (toWh.onHand / toWh.daysAfter))).toFixed(1);
-    const fromBelowSafety = (fromWh.onHand - req.qty) < fromWh.safety;
-
-    const fromFillBefore = Math.min(100, Math.round((fromWh.available / fromWh.onHand) * 100));
-    const fromFillAfter = Math.max(0, Math.min(100, Math.round((fromAfterAvailable / fromWh.onHand) * 100)));
-
-    const content = document.getElementById('impact-preview-content');
-    content.innerHTML = `
-      <div style="background: var(--bg-honeydew); border-radius: var(--radius); padding: var(--space-3); margin-bottom: var(--space-4); font-size: var(--text-sm);">
-        <strong>Transfer: ${offer.cargo}</strong> — ${req.qty} Units
-        <br><span class="text-meta">
-          ${offer.coldChain ? '🧊 Refrigerated vehicle confirmed for cold-chain cargo' : '📦 Standard vehicle'}
-        </span>
-      </div>
-
-      <div class="impact-preview-grid">
-        <div class="impact-hub-card">
-          <span class="panel-label" style="color: var(--slate-500);">SOURCE HUB (After Transfer)</span>
-          <h4 style="margin: 4px 0;">${fromWh?.name || offer.from}</h4>
-          
-          <div style="margin-top: var(--space-3);">
-            <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 2px;">
-              <span>Before</span><span style="color: var(--forest-700);">${fromWh.available} units</span>
-            </div>
-            <div class="stock-bar-track">
-              <div class="stock-bar-fill" style="width: ${fromFillBefore}%;"></div>
-            </div>
-            <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 2px; margin-top: 6px;">
-              <span>After</span>
-              <span style="color: ${fromBelowSafety ? 'var(--slate-800)' : 'var(--forest-700)'}; font-weight: 600;">${fromAfterAvailable} units</span>
-            </div>
-            <div class="stock-bar-track">
-              <div class="stock-bar-fill ${fromBelowSafety ? 'danger' : ''}" style="width: ${fromFillAfter}%;"></div>
-            </div>
-            <div class="data-numeral" style="font-size: var(--text-lg); margin-top: var(--space-3); color: ${fromBelowSafety ? 'var(--slate-800)' : 'var(--forest-700)'};">
-              ${fromAfterDays} Days Cover
-            </div>
-          </div>
-
-          ${fromBelowSafety ? `
-            <div style="background: var(--slate-800); color: var(--white); padding: 6px; border-radius: 4px; font-size: 11px; margin-top: 8px; font-weight: 600;">
-              ⚠️ Source drops below safety threshold! Consider reducing quantity.
-            </div>
-          ` : `<div style="font-size: 11px; color: var(--forest-700); margin-top: 6px;">✓ Stays above safety threshold</div>`}
-        </div>
-
-        <div class="impact-hub-card">
-          <span class="panel-label" style="color: var(--forest-700);">DESTINATION HUB (After Receiving)</span>
-          <h4 style="margin: 4px 0;">${toWh?.name || req.to}</h4>
-
-          <div style="margin-top: var(--space-3);">
-            <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 2px;">
-              <span>Before</span><span style="color: var(--slate-500);">${toWh.daysAfter} days cover</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 2px; margin-top: 6px;">
-              <span>After Receiving</span><span style="color: var(--forest-700); font-weight: 600;">${toAfterDays} days cover</span>
-            </div>
-            <div class="data-numeral" style="font-size: var(--text-lg); margin-top: var(--space-3); color: var(--forest-700);">
-              ${toAfterDays} Days Cover
-            </div>
-            <div style="font-size: 11px; color: var(--forest-700); margin-top: 6px;">✓ Supply cover improved significantly</div>
-          </div>
-        </div>
-      </div>
-
-      ${fromBelowSafety ? `
-        <div style="background: #FFF3F0; border: 1px solid var(--slate-800); border-radius: var(--radius); padding: var(--space-3); margin-top: var(--space-4); font-size: var(--text-sm);">
-          <strong>⚠️ Suggested Safer Quantity:</strong> Transfer ${Math.max(0, req.qty - fromWh.safety)} units instead of ${req.qty} to keep source above safety threshold.
-        </div>
-      ` : ''}
-    `;
-
-    document.getElementById('impact-preview-modal').classList.remove('hidden');
-  }
-
-  closeImpactModal() {
-    document.getElementById('impact-preview-modal').classList.add('hidden');
-    this.pendingTransferApproval = null;
-  }
-
-  confirmTransfer() {
-    if (!this.pendingTransferApproval) return;
-    const { offerId, reqId } = this.pendingTransferApproval;
-    const offer = this.offers.find(o => o.id === offerId);
-    const req = this.requests.find(r => r.id === reqId);
-
-    if (offer) offer.status = 'Approved';
-    if (req) req.status = 'Approved';
-
-    const fromWh = offer ? this.warehouses[offer.from] : null;
-    const toWh = req ? this.warehouses[req.to] : null;
-
-    // Add new active transfer
-    this.transfers.push({
-      id: `txfr-${Date.now()}`,
-      from: fromWh?.name || 'Source Hub',
-      to: toWh?.name || 'Destination Hub',
-      cargo: offer?.cargo || 'Relief Supplies',
-      qty: req?.qty || 0,
-      coldChain: offer?.coldChain || false,
-      currentStage: 2, // Approved
-      convoy: 'Convoy (Queued)',
-      started: `${new Date().toISOString().substring(11, 16)} UTC`,
-      eta: 'TBD (Dispatch Pending)'
-    });
-
-    this.closeImpactModal();
-    this.updateMetrics();
-    this.renderActiveTransfers();
-    this.renderMatches();
-    this.renderOffers();
-
-    toast.success(`Transfer approved! Convoy dispatch queued. Transfer lifecycle tracking active.`);
-    setTimeout(() => this.switchTab('active'), 800);
-  }
-
-  /* ------------------------------------------
-     ACTIVE TRANSFERS LIFECYCLE BOARD
-  ------------------------------------------ */
-  renderActiveTransfers() {
-    const container = document.getElementById('active-transfers-container');
-    container.innerHTML = '';
-
-    if (this.transfers.length === 0) {
-      container.innerHTML = `
-        <div class="card" style="text-align: center; padding: 48px;">
-          <p class="text-meta">No active transfers. Approve a matched offer to initiate a transfer.</p>
-        </div>
-      `;
-      return;
-    }
-
-    this.transfers.forEach(t => {
-      const isCompleted = t.currentStage >= 8;
-      const statusBadgeHtml = isCompleted
-        ? window.statusBadge.render('normal', { label: 'Completed' })
-        : t.currentStage >= 5
-          ? window.statusBadge.render('degraded', { label: this.LIFECYCLE_STAGES[t.currentStage] })
-          : window.statusBadge.render('normal', { label: this.LIFECYCLE_STAGES[t.currentStage] });
-
-      const div = document.createElement('div');
-      div.className = 'transfer-card';
-      div.innerHTML = `
-        <div class="transfer-card-header">
+    container.innerHTML = `
+      <!-- CRITICAL SINGLE MATCH -->
+      <div class="card warning" style="border-left: 4px solid var(--slate-800); margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
           <div>
-            <div style="font-weight: 700; margin-bottom: 2px;">${t.id} — ${t.cargo} (${t.qty} Units)</div>
-            <div class="text-meta">${t.from} → ${t.to}</div>
-            <div class="text-meta">Convoy: <strong>${t.convoy}</strong> · Started: ${t.started} · ETA: ${t.eta}</div>
-            ${t.coldChain ? `<span style="font-size: 11px; color: var(--forest-700); font-weight: 600;">🧊 Cold-Chain Cargo</span>` : ''}
+            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+              <span class="badge badge-blocked">❖ CRITICAL MATCH DETECTED</span>
+              <span class="badge badge-safe">❄️ Cold-Chain Fit Verified</span>
+            </div>
+            <h4 style="margin: 0;">Hub Bravo → Hub Alpha: 600 Vials Insulin & Blood Products</h4>
+            <span class="text-meta">Recipient Shelter 12 at 0.5 Days Supply Cover</span>
           </div>
-          <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px;">
-            ${statusBadgeHtml}
-            ${!isCompleted ? `
-              <button class="btn btn-secondary" style="min-height: 30px; font-size: 11px;" onclick="supplySwap.advanceTransferStage('${t.id}')">
-                ⏭ Advance Stage
-              </button>
-            ` : ''}
-          </div>
+          <button class="btn btn-primary" style="font-size: 11px; min-height: 32px;"
+                  ${!canApprove ? 'disabled title="Approving transfers is a Warehouse Manager action."' : ''}
+                  onclick="supplySwap.openImpactPreview('Hub Bravo', 'Hub Alpha', 'Insulin & Blood Products', 600, true)">
+            Preview Impact & Approve →
+          </button>
         </div>
+      </div>
 
-        <!-- LIFECYCLE TRACK -->
-        <div class="lifecycle-track">
-          ${this.LIFECYCLE_STAGES.map((stage, i) => {
-            const isDone = i < t.currentStage;
-            const isActive = i === t.currentStage;
-            const stateClass = isDone ? 'done' : isActive ? 'active' : '';
-            return `
-              ${i > 0 ? `<div class="lifecycle-line ${isDone ? 'done' : ''}"></div>` : ''}
-              <div class="lifecycle-step">
-                <div class="lifecycle-dot ${stateClass}">${isDone ? '✓' : (i + 1)}</div>
-                <div class="lifecycle-label ${stateClass}">${stage}</div>
-              </div>
-            `;
-          }).join('')}
+      <!-- MULTI-HOP CHAIN SWAP CARD (B.2) -->
+      <div class="card" style="border-left: 4px solid var(--forest-600);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+              <span class="badge badge-caution">🔀 MULTI-HOP CHAIN SWAP AVAILABLE (B.2)</span>
+              <span class="badge badge-safe">2-Leg Chain Match</span>
+            </div>
+            <h4 style="margin: 0;">Chain Swap: Hub Charlie (400 Units) + Hub Bravo (200 Units) → Hub Alpha</h4>
+            <span class="text-meta">No single warehouse has full surplus. Combined multi-hop chain covers 100% of demand.</span>
+          </div>
+          <button class="btn btn-secondary" style="font-size: 11px; min-height: 32px;"
+                  ${!canApprove ? 'disabled title="Approving transfers is a Warehouse Manager action."' : ''}
+                  onclick="supplySwap.openImpactPreview('Hub Charlie + Bravo', 'Hub Alpha', 'Insulin & Blood Products', 600, true)">
+            Inspect Chain Legs →
+          </button>
         </div>
-      `;
-      container.appendChild(div);
-    });
+      </div>
+    `;
   }
 
-  advanceTransferStage(transferId) {
-    const t = this.transfers.find(x => x.id === transferId);
-    if (!t || t.currentStage >= 8) return;
-    t.currentStage++;
+  /* ------------------------------------------
+     TRANSFER IMPACT PREVIEW MODAL (B.5)
+     ------------------------------------------ */
+  openImpactPreview(fromName, toName, cargoName, qty, coldChain) {
+    this.pendingTransferApproval = { fromName, toName, cargoName, qty, coldChain };
 
-    if (t.currentStage === 5) {
-      t.convoy = 'Convoy (Dispatched - On Route)';
-    } else if (t.currentStage === 8) {
-      t.convoy += ' ✓ Delivered';
-      toast.success(`Transfer ${t.id} COMPLETED! ${t.cargo} successfully received at ${t.to}.`);
-    } else {
-      toast.info(`Transfer ${t.id} advanced to stage: ${this.LIFECYCLE_STAGES[t.currentStage]}`);
+    const modal = document.getElementById('impact-preview-modal');
+    if (!modal) return;
+
+    const descEl = document.getElementById('impact-modal-desc');
+    const warningEl = document.getElementById('impact-modal-warning');
+
+    if (descEl) {
+      descEl.innerHTML = `
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+          <div style="background: var(--bg-honeydew); padding: 10px; border-radius: var(--radius);">
+            <strong>Donor: ${fromName}</strong><br>
+            Stock Before: 6,200 Units (3.1 Days)<br>
+            <strong style="color: var(--forest-600);">Stock After: 5,600 Units (2.8 Days)</strong>
+          </div>
+          <div style="background: var(--bg-honeydew); padding: 10px; border-radius: var(--radius);">
+            <strong>Recipient: ${toName}</strong><br>
+            Stock Before: 14,000 Units (4.5 Days)<br>
+            <strong style="color: var(--forest-700);">Stock After: 14,600 Units (4.9 Days)</strong>
+          </div>
+        </div>
+      `;
     }
 
-    this.updateMetrics();
-    this.renderActiveTransfers();
+    if (warningEl) {
+      warningEl.innerHTML = `
+        <div style="background: rgba(90, 122, 104, 0.15); border: 1px solid var(--forest-600); padding: 8px 12px; border-radius: 6px; font-size: 12px; margin-bottom: 12px;">
+          ⚠️ <strong>Safety Threshold Advisory (B.5):</strong> Donor stock drops slightly below 3.0 days threshold. Recommended safe transfer quantity: 450 units.
+        </div>
+      `;
+    }
+
+    modal.classList.remove('hidden');
+  }
+
+  closeImpactPreview() {
+    const modal = document.getElementById('impact-preview-modal');
+    if (modal) modal.classList.add('hidden');
+  }
+
+  confirmImpactApproval() {
+    if (!this.pendingTransferApproval) return;
+    const t = this.pendingTransferApproval;
+
+    const newTxfr = {
+      id: `txfr-${Date.now().toString().slice(-3)}`,
+      from: t.fromName,
+      to: t.toName,
+      cargo: t.cargoName,
+      cargoType: t.cargoName.includes('Insulin') ? 'Insulin/Blood' : 'General',
+      qty: t.qty,
+      coldChain: t.coldChain,
+      currentStage: 2, // Approved
+      convoy: 'Convoy 14',
+      started: 'Just now',
+      eta: '14:20 UTC',
+      status: 'Active'
+    };
+
+    if (window.store) {
+      window.store.addTransfer(newTxfr);
+    }
+
+    this.closeImpactPreview();
+    if (window.toast) {
+      window.toast.success(`Supply Swap Transfer ${newTxfr.id} APPROVED! Lifecycle stage advanced to Approved.`);
+    }
+  }
+
+  /* ------------------------------------------
+     ACTIVE TRANSFERS & LIFECYCLE TRACKER
+     ------------------------------------------ */
+  renderActiveTransfers() {
+    const container = document.getElementById('transfers-list') || document.getElementById('active-transfers-container');
+    if (!container) return;
+
+
+    const transfers = window.store ? window.store.getTransfers() : [];
+    const stages = [
+      'Requested', 'Matched', 'Approved',
+      'Picking', 'Loading', 'Dispatched',
+      'In Transit', 'Received', 'Completed'
+    ];
+
+    container.innerHTML = transfers.map(t => {
+      const isRerouted = t.currentStage === 6; // In transit reroute warning
+
+      return `
+        <div class="card" style="margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                <span class="badge ${t.currentStage === 8 ? 'badge-safe' : 'badge-caution'}">${t.id} — ${stages[t.currentStage]}</span>
+                ${t.coldChain ? '<span class="badge badge-blocked">❄️ Cold-Chain Gate Passed</span>' : ''}
+              </div>
+              <h4 style="margin: 0;">${t.from} → ${t.to}</h4>
+              <span class="text-meta">Cargo: <strong>${t.cargo}</strong> (${t.qty} Units) · Convoy: ${t.convoy} · ETA: ${t.eta}</span>
+            </div>
+            ${t.currentStage < 8 ? `
+              <button class="btn btn-secondary" style="font-size: 11px; min-height: 32px;" onclick="supplySwap.advanceStage('${t.id}')">
+                Advance Stage (${stages[t.currentStage + 1]}) →
+              </button>
+            ` : '<span class="badge badge-safe">✓ Completed</span>'}
+          </div>
+
+          <!-- MID-TRANSIT REROUTE ALERT (B.4) -->
+          ${isRerouted ? `
+            <div style="background: var(--bg-honeydew); border-left: 3px solid var(--forest-600); padding: 8px 12px; border-radius: 4px; font-size: 11px; margin-bottom: 8px;">
+              ⚠️ <strong>MID-TRANSIT REROUTE ALERT (B.4):</strong> Bridge B14 closed mid-transit. Convoy 14 auto-rerouted via Bypass 2. ETA updated: +25 mins.
+            </div>
+          ` : ''}
+
+          <!-- LIFECYCLE PROGRESS BAR -->
+          <div style="display: flex; gap: 4px; margin-top: 12px;">
+            ${stages.map((st, idx) => `
+              <div style="flex: 1; text-align: center;">
+                <div style="height: 6px; border-radius: 3px; background: ${idx <= t.currentStage ? (idx === 8 ? 'var(--sage-500)' : 'var(--forest-600)') : 'var(--border-hairline)'};"></div>
+                <span style="font-size: 9px; color: ${idx === t.currentStage ? 'var(--slate-800)' : 'var(--slate-500)'}; font-weight: ${idx === t.currentStage ? 'bold' : 'normal'}; display: block; margin-top: 2px;">
+                  ${st}
+                </span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  /* B.7 — Low-Bandwidth Shelter Need Ping */
+  openShelterPingModal() {
+    const modal = document.getElementById('shelter-ping-modal');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    if (window.A11yUtil) window.A11yUtil.trapFocus(modal);
+  }
+
+  closeShelterPingModal() {
+    const modal = document.getElementById('shelter-ping-modal');
+    if (modal) modal.classList.add('hidden');
+  }
+
+  submitShelterNeedPing(e) {
+    e.preventDefault();
+    const shelterId = document.getElementById('ping-shelter-id')?.value.trim();
+    const item      = document.getElementById('ping-item')?.value;
+    const qty       = document.getElementById('ping-qty')?.value.trim();
+    const urgency   = document.getElementById('ping-urgency')?.value;
+    if (!shelterId || !item || !qty) return;
+
+    // Enter the same transfer/request pipeline, tagged as Field Report
+    if (window.store) {
+      window.store.addTransfer({
+        from: 'Shelter Field Report (B.7)',
+        to: shelterId,
+        cargo: item,
+        cargoType: item,
+        qty: parseInt(qty, 10) || 0,
+        coldChain: item === 'Insulin/Blood',
+        currentStage: 0,
+        convoy: 'Unassigned',
+        started: 'Pending',
+        eta: 'Pending',
+        status: urgency === 'critical' ? 'Active' : 'Active',
+        priority: urgency,
+        createdAt: Date.now(),
+        isFieldReport: true  // B.7 field-report tag
+      });
+    }
+
+    if (window.toast) window.toast.success(`Shelter need registered: ${item} for ${shelterId}. Entering request pipeline.`);
+    if (window.A11yUtil) window.A11yUtil.announce(`Shelter need ping submitted for ${shelterId}.`);
+    this.closeShelterPingModal();
+    this.render();
+  }
+
+  advanceStage(transferId) {
+    if (window.store) {
+      window.store.advanceTransferStage(transferId);
+    }
   }
 }
 

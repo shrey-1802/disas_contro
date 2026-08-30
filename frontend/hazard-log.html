@@ -12,7 +12,7 @@
 </head>
 <body>
 
-  <main class="page-main">
+  <main class="page-main" id="main-content">
     <div class="container" style="margin-top: var(--space-5);">
       <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-5);">
         <div>
@@ -30,7 +30,7 @@
             <span class="badge badge-caution">Auto-GPS Geolocated</span>
           </div>
 
-          <form onsubmit="handleHazardSubmit(event)">
+          <form onsubmit="hazardLog.handleHazardSubmit(event)">
             <div class="form-group">
               <label class="form-label" for="hazard-loc">Hazard Location / Road Segment</label>
               <input type="text" class="form-control" id="hazard-loc" value="Route 4 — Mile 14.2 (Lat 14.625, Lng 120.980)" required>
@@ -73,7 +73,7 @@
           </div>
 
           <div id="hazard-feed-container" style="display: flex; flex-direction: column; gap: var(--space-3);">
-            <!-- Rendered by JS -->
+            <!-- Rendered by hazardLog.js -->
           </div>
         </div>
       </div>
@@ -83,73 +83,18 @@
   <script src="js/auth.js"></script>
   <script src="js/statusBadge.js"></script>
   <script src="js/toast.js"></script>
-  <script src="js/api.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/socket.js"></script>
+  <script src="js/shared/search.js"></script>
+  <script src="js/shared/a11y.js"></script>
+  <script src="js/shared/freshness.js"></script>
+  <script src="js/shared/loading.js"></script>
+  <script src="js/shared/empty.js"></script>
+  <script src="js/shared/error.js"></script>
+  <script src="js/shared/copy.js"></script>
+  <script src="js/offlineQueue.js"></script>
+  <script src="js/globalSearch.js"></script>
   <script src="js/navbar.js"></script>
-
-  <script>
-    const reports = [
-      { id: 'rep-101', source: 'Field Driver (Unit 4)', type: 'Flash Flood', severity: 'hazardous', loc: 'Route 4 — Mile 12', time: '10 mins ago', confidence: 85, confirmed: false },
-      { id: 'rep-102', source: 'Satellite Radar', type: 'Bridge Structural Fail', severity: 'impassable', loc: 'Bridge B14', time: '25 mins ago', confidence: 98, confirmed: true }
-    ];
-
-    document.addEventListener('DOMContentLoaded', renderFeed);
-
-    function renderFeed() {
-      const container = document.getElementById('hazard-feed-container');
-      container.innerHTML = '';
-
-      reports.forEach(r => {
-        const badge = statusBadge.render(r.severity, { confirmed: r.confirmed, label: r.severity.toUpperCase() });
-        const canVerify = auth.canPerform('verify_hazard') && !r.confirmed;
-
-        const div = document.createElement('div');
-        div.style.cssText = 'background: var(--bg-honeydew); padding: var(--space-3); border-radius: var(--radius); border: 1px solid var(--border-hairline);';
-        div.innerHTML = `
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
-            <strong>${r.type} @ ${r.loc}</strong>
-            ${badge}
-          </div>
-          <div class="text-meta">Source: ${r.source} · ${r.time} · Confidence: ${r.confidence}%</div>
-          ${canVerify ? `
-            <button class="btn btn-secondary" style="margin-top: 8px; min-height: 32px; font-size: 11px;" onclick="verifyReport('${r.id}')">
-              ✓ Verify Report
-            </button>
-          ` : ''}
-        `;
-        container.appendChild(div);
-      });
-    }
-
-    function handleHazardSubmit(e) {
-      e.preventDefault();
-      const loc = document.getElementById('hazard-loc').value;
-      const type = document.getElementById('hazard-type').value;
-      const sev = document.getElementById('hazard-severity').value;
-
-      reports.unshift({
-        id: `rep-${Date.now()}`,
-        source: `${auth.getCurrentUser() ? auth.getCurrentUser().username : 'Field Driver'}`,
-        type: type,
-        severity: sev,
-        loc: loc,
-        time: 'Just now',
-        confidence: 80,
-        confirmed: false
-      });
-
-      renderFeed();
-      toast.success(`Field hazard report submitted for ${loc}! Fusion pipeline processing...`);
-    }
-
-    function verifyReport(id) {
-      const rep = reports.find(r => r.id === id);
-      if (rep) {
-        rep.confirmed = true;
-        rep.confidence = 100;
-        renderFeed();
-        toast.success(`Report ${id} verified by Control Room! Status promoted.`);
-      }
-    }
-  </script>
+  <script src="js/pages/hazardLog.js"></script>
 </body>
 </html>

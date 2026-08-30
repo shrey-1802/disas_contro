@@ -5,95 +5,46 @@
 
 class ShelterBoardManager {
   constructor() {
-    this.shelters = [
-      {
-        id: 'shelter-19',
-        name: 'Shelter 19 (Island Reach)',
-        district: 'District 4 (Northern Rift)',
-        population: 2100,
-        daysSupply: 0.5,
-        urgency: 'critical',
-        isolated: true,
-        incomingConvoy: null,
-        shortageType: 'medical',
-        inventory: {
-          water: '400 Liters (Critically Low)',
-          insulin: '12 Vials (0.2 Days Cover)',
-          nutrition: '80 Ration Packs'
-        }
-      },
-      {
-        id: 'shelter-12',
-        name: 'Shelter 12 (North Community)',
-        district: 'District 4 (Northern Rift)',
-        population: 1450,
-        daysSupply: 1.5,
-        urgency: 'critical',
-        isolated: false,
-        incomingConvoy: 'Convoy 14 (ETA 45m)',
-        shortageType: 'medical',
-        inventory: {
-          water: '1,200 Liters',
-          insulin: '45 Vials (1.2 Days Cover)',
-          nutrition: '300 Ration Packs'
-        }
-      },
-      {
-        id: 'shelter-04',
-        name: 'Shelter 04 (Rift Valley High)',
-        district: 'District 4 (Northern Rift)',
-        population: 920,
-        daysSupply: 3.2,
-        urgency: 'safe',
-        isolated: false,
-        incomingConvoy: 'Convoy 22 (ETA 1h 20m)',
-        shortageType: 'food',
-        inventory: {
-          water: '3,500 Liters',
-          insulin: '120 Vials (3.5 Days Cover)',
-          nutrition: '850 Ration Packs'
-        }
-      }
-    ];
-
-    this.expandedCards = new Set(['shelter-19']); // Open isolated shelter by default
+    this.expandedCards = new Set(['shelter-19']);
   }
 
   init() {
     this.render();
-    this.auditIsolatedShelters();
-  }
-
-  auditIsolatedShelters() {
-    const isolated = this.shelters.filter(s => s.isolated);
-    if (isolated.length > 0) {
-      const names = isolated.map(s => s.name).join(', ');
-      toast.showBanner(`ISOLATED SHELTER DETECTED: ${names} has NO reachable road path from any warehouse depot!`);
+    if (window.store) {
+      window.store.subscribe(() => this.render());
+    }
+    if (window.socket) {
+      window.socket.on('shelter:demand_update', () => this.render());
+      window.socket.on('route:recalculated', () => this.render());
     }
   }
 
   getFilteredShelters() {
-    let list = [...this.shelters];
+    const shelters = window.store ? window.store.getShelters() : [];
+    let list = [...shelters];
 
-    const urgencyFilter = document.getElementById('filter-urgency').value;
-    if (urgencyFilter === 'ISOLATED') {
-      list = list.filter(s => s.isolated);
-    } else if (urgencyFilter === 'CRITICAL') {
-      list = list.filter(s => s.daysSupply < 1.5);
-    } else if (urgencyFilter === 'CAUTION') {
-      list = list.filter(s => s.daysSupply >= 1.5 && s.daysSupply <= 3.0);
-    } else if (urgencyFilter === 'SAFE') {
-      list = list.filter(s => s.daysSupply > 3.0);
+    const urgencyFilterEl = document.getElementById('filter-urgency');
+    if (urgencyFilterEl) {
+      const urgencyFilter = urgencyFilterEl.value;
+      if (urgencyFilter === 'ISOLATED') {
+        list = list.filter(s => s.isolated);
+      } else if (urgencyFilter === 'CRITICAL') {
+        list = list.filter(s => s.daysSupply < 1.5);
+      } else if (urgencyFilter === 'CAUTION') {
+        list = list.filter(s => s.daysSupply >= 1.5 && s.daysSupply <= 3.0);
+      } else if (urgencyFilter === 'SAFE') {
+        list = list.filter(s => s.daysSupply > 3.0);
+      }
     }
 
-    const shortageFilter = document.getElementById('filter-shortage').value;
-    if (shortageFilter !== 'ALL') {
-      list = list.filter(s => s.shortageType === shortageFilter);
+    const shortageFilterEl = document.getElementById('filter-shortage');
+    if (shortageFilterEl && shortageFilterEl.value !== 'ALL') {
+      list = list.filter(s => s.shortageType === shortageFilterEl.value);
     }
 
     // Sort: Isolated first, then lowest days of supply
     list.sort((a, b) => {
-      if (a.isolated !== b.isolated) return b.isolated ? 1 : -1;
+      if (a.isolated !== b.isolated) return b.isolated ? -1 : 1;
       return a.daysSupply - b.daysSupply;
     });
 
@@ -101,81 +52,81 @@ class ShelterBoardManager {
   }
 
   render() {
-    const container = document.getElementById('shelter-cards-container');
-    const shelters = this.getFilteredShelters();
+    const container = document.getElementById('shelter-grid') || document.getElementById('shelter-cards-container');
+    if (!container) return;
+
+
+    const list = this.getFilteredShelters();
     container.innerHTML = '';
 
-    // Update Metric Badges
-    document.getElementById('metric-shelters-count').innerText = this.shelters.length;
-    document.getElementById('metric-isolated-count').innerText = this.shelters.filter(s => s.isolated).length;
-    document.getElementById('metric-critical-count').innerText = this.shelters.filter(s => s.daysSupply < 1.5).length;
-    document.getElementById('metric-safe-count').innerText = this.shelters.filter(s => s.daysSupply >= 3.0).length;
-
-    if (shelters.length === 0) {
-      container.innerHTML = `
-        <div style="grid-column: 1 / -1; text-align: center; padding: 48px; background: var(--white); border: 1px solid var(--border-hairline); border-radius: var(--radius);">
-          <p style="color: var(--slate-500);">No shelters matching active filter parameters.</p>
-        </div>
-      `;
+    if (list.length === 0) {
+      container.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--slate-500); padding: 32px;">No shelters match selected filters.</div>`;
       return;
     }
 
-    shelters.forEach(s => {
+    list.forEach(s => {
       const isExpanded = this.expandedCards.has(s.id);
-      const daysClass = s.daysSupply < 1.5 ? 'critical' : (s.daysSupply <= 3.0 ? 'caution' : 'safe');
-      const badgeHtml = s.isolated
-        ? `<span class="badge badge-blocked" style="border: 2px solid var(--slate-800); font-weight: 700;">❖ ISOLATED SHELTER</span>`
-        : window.statusBadge.render(s.urgency === 'critical' ? 'impassable' : 'normal', { label: s.urgency.toUpperCase() });
+      const isIsolated = s.isolated;
+      const isCritical = s.daysSupply < 1.5;
+
+      const badgeType = isIsolated ? 'badge-blocked' : (isCritical ? 'badge-blocked' : (s.daysSupply <= 3.0 ? 'badge-caution' : 'badge-safe'));
+      const badgeText = isIsolated ? '❖ ISOLATED (NO ROAD ACCESS)' : (isCritical ? 'CRITICAL SHORTAGE' : `${s.daysSupply} DAYS COVER`);
 
       const card = document.createElement('div');
-      card.className = `card shelter-card hover-focus ${s.isolated ? 'isolated-card' : ''}`;
+      card.className = `card ${isIsolated ? 'critical' : (isCritical ? 'critical' : '')}`;
+      card.style.cssText = `background: var(--white); ${isIsolated ? 'border: 2px solid var(--slate-800);' : ''}`;
       card.innerHTML = `
-        <div class="shelter-card-top">
+        <div class="card-header">
           <div>
-            <h3 style="font-size: var(--text-base); margin-bottom: 2px;">${s.name}</h3>
-            <span class="text-meta">👥 ${s.population} Occupants · ${s.district}</span>
+            <span class="badge ${badgeType}" style="margin-bottom: 6px;">${badgeText}</span>
+            <h3 style="font-size: var(--text-base); margin: 0;">${s.name}</h3>
+            <span class="text-meta">${s.district || 'District 4'}</span>
           </div>
-          <div>${badgeHtml}</div>
-        </div>
-
-        <!-- DAYS OF SUPPLY TABULAR DISPLAY -->
-        <div class="days-cover-display">
-          <span class="panel-label">ESTIMATED SUPPLY COVER</span>
-          <div class="days-cover-numeral ${daysClass}">${s.daysSupply} Days</div>
-          <div class="text-meta" style="margin-top: 2px;">
-            ${s.incomingConvoy ? `🚚 Incoming: <strong>${s.incomingConvoy}</strong>` : `<span style="color: var(--slate-800); font-weight: 600;">⚠️ NO INCOMING CONVOY EN ROUTE</span>`}
+          <div style="text-align: right;">
+            <div class="data-numeral" style="font-size: 28px; color: ${isIsolated || isCritical ? 'var(--slate-800)' : 'var(--forest-700)'};">
+              ${s.daysSupply} <span style="font-size: 12px; font-weight: normal;">Days</span>
+            </div>
+            <span class="text-meta">Pop: ${s.population}</span>
           </div>
         </div>
 
-        <div style="display: flex; gap: var(--space-2);">
-          <button class="btn btn-secondary" style="flex: 1; min-height: 36px; font-size: var(--text-xs);" onclick="shelterBoard.toggleCard('${s.id}')">
-            ${isExpanded ? 'Hide Telemetry ▲' : 'View Telemetry ▼'}
-          </button>
-          <button class="btn btn-primary" style="flex: 1; min-height: 36px; font-size: var(--text-xs);" onclick="shelterBoard.openRequestModal('${s.id}')">
-            Request Rebalancing →
-          </button>
+        ${isIsolated ? `
+          <div style="background: var(--slate-800); color: var(--white); padding: 8px 12px; border-radius: var(--radius); font-size: 11px; margin-bottom: 12px;">
+            ⚠️ <strong>ISOLATION DETECTED (A.4):</strong> Bridge B14 and primary corridors impassable. No safe road path from any warehouse depot.
+          </div>
+        ` : ''}
+
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; font-size: 12px; background: var(--bg-honeydew); padding: 8px; border-radius: var(--radius); margin-bottom: 12px;">
+          <div><strong>Water:</strong><br><span style="font-size: 11px;">${s.inventory ? s.inventory.water : '400L'}</span></div>
+          <div><strong>Insulin:</strong><br><span style="font-size: 11px;">${s.inventory ? s.inventory.insulin : '12 Vials'}</span></div>
+          <div><strong>Rations:</strong><br><span style="font-size: 11px;">${s.inventory ? s.inventory.nutrition : '80 Packs'}</span></div>
         </div>
 
-        <!-- EXPANDABLE INVENTORY BREAKDOWN -->
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <span class="text-meta">Incoming: <strong>${s.incomingConvoy || 'None Assigned'}</strong></span>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-secondary" style="font-size: 11px; padding: 4px 8px;" onclick="shelterBoard.toggleCard('${s.id}')">
+              ${isExpanded ? 'Hide History' : 'View Sparkline'}
+            </button>
+            <button class="btn btn-primary" style="font-size: 11px; padding: 4px 8px;" onclick="window.location.href='supply-swap.html'">
+              Request Supply Swap →
+            </button>
+          </div>
+        </div>
+
         ${isExpanded ? `
-          <div class="supply-breakdown-list">
-            <div class="supply-item">
-              <strong>💧 Clean Water:</strong><br>${s.inventory.water}
+          <div style="margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--border-hairline); font-size: 11px; color: var(--slate-500);">
+            <strong>Supply History Trend (72 Hours):</strong>
+            <div style="height: 36px; display: flex; align-items: flex-end; gap: 4px; margin-top: 6px;">
+              <div style="height: 100%; width: 12px; background: var(--forest-600);" title="72h ago: 4.0 days"></div>
+              <div style="height: 75%; width: 12px; background: var(--forest-600);" title="48h ago: 3.0 days"></div>
+              <div style="height: 50%; width: 12px; background: var(--sage-500);" title="24h ago: 2.0 days"></div>
+              <div style="height: 20%; width: 12px; background: var(--slate-800);" title="Current: ${s.daysSupply} days"></div>
             </div>
-            <div class="supply-item">
-              <strong>🩸 Insulin / Vials:</strong><br>${s.inventory.insulin}
-            </div>
-            <div class="supply-item" style="grid-column: 1 / -1;">
-              <strong>🍼 Infant & Food Rations:</strong><br>${s.inventory.nutrition}
-            </div>
-          </div>
-
-          <div class="sparkline-placeholder">
-            <span>📊 7-Day Demand Trend: Not enough history data points yet — telemetry logging active.</span>
+            <span class="text-meta" style="margin-top: 4px; display: block;">Consumption draw rate accelerating due to surge population.</span>
           </div>
         ` : ''}
       `;
-
       container.appendChild(card);
     });
   }
@@ -184,40 +135,6 @@ class ShelterBoardManager {
     if (this.expandedCards.has(id)) this.expandedCards.delete(id);
     else this.expandedCards.add(id);
     this.render();
-  }
-
-  applyFilters() {
-    this.render();
-  }
-
-  resetFilters() {
-    document.getElementById('filter-urgency').value = 'ALL';
-    document.getElementById('filter-shortage').value = 'ALL';
-    this.render();
-  }
-
-  openRequestModal(shelterId = null) {
-    if (shelterId) {
-      document.getElementById('rebalance-shelter-select').value = shelterId;
-    }
-    document.getElementById('rebalance-modal').classList.remove('hidden');
-  }
-
-  closeRequestModal() {
-    document.getElementById('rebalance-modal').classList.add('hidden');
-  }
-
-  handleRebalanceSubmit(e) {
-    e.preventDefault();
-    const shelter = document.getElementById('rebalance-shelter-select').value;
-    const category = document.getElementById('rebalance-category').value;
-    const qty = document.getElementById('rebalance-qty').value;
-
-    this.closeRequestModal();
-    toast.success(`Emergency Rebalancing Request for ${category} (${qty}) submitted! Routed to Supply Swap module.`);
-    setTimeout(() => {
-      window.location.href = 'supply-swap.html';
-    }, 1200);
   }
 }
 

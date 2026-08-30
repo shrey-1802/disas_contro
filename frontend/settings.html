@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DISISTA CONTROL — System Settings</title>
-  <meta name="description" content="System Settings, Language, Offline Sync, and Field Mode Configuration">
+  <meta name="description" content="Platform configuration: field mode, offline sync queue, user management, language settings, and keyboard shortcuts.">
 
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/base.css">
@@ -12,42 +12,114 @@
 </head>
 <body>
 
-  <main class="page-main">
-    <div class="container" style="margin-top: var(--space-5);">
-      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-5);">
+  <main class="page-main" id="main-content">
+    <div class="container" style="margin-top:var(--space-5);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-5);">
         <div>
           <span class="panel-label">PLATFORM CONFIGURATION</span>
-          <h2>System Settings & Preferences</h2>
+          <h1 style="font-size:var(--text-xl);margin:0;">System Settings &amp; Preferences</h1>
         </div>
       </div>
 
-      <div style="max-width: 600px; display: flex; flex-direction: column; gap: var(--space-4);">
-        <!-- FIELD MODE TOGGLE -->
-        <div class="card">
-          <div class="card-header">
-            <span class="card-title">Field Mode Accessibility Override</span>
-            <span class="badge badge-safe">Token Override</span>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-5);">
+        <div style="display:flex;flex-direction:column;gap:var(--space-4);">
+
+          <!-- FIELD MODE TOGGLE -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Field Mode Accessibility Override</span>
+              <span class="badge badge-safe">Token Override</span>
+            </div>
+            <p style="font-size:var(--text-sm);margin-bottom:var(--space-4);">
+              Enables larger touch targets (≥44px), 18px base text size, and thicker hairline borders for daylight field tablet operation.
+            </p>
+            <button class="btn btn-primary" id="field-mode-toggle-btn"
+              onclick="auth.toggleFieldMode(); navbar.updateFieldBtn(); settingsManager.updateFieldModeUI();"
+              aria-pressed="false">
+              Toggle Field Mode (ON / OFF)
+            </button>
           </div>
-          <p style="font-size: var(--text-sm); margin-bottom: var(--space-4);">
-            Enables larger touch targets (≥44px), increased text size (18px base), and thicker hairline borders for daylight field tablet operation.
-          </p>
-          <button class="btn btn-primary" onclick="auth.toggleFieldMode(); navbar.updateFieldBtn(); toast.success('Field Mode Toggled');">
-            Toggle Field Mode (ON / OFF)
-          </button>
+
+          <!-- LANGUAGE SELECTOR -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Interface Language</span>
+              <span class="badge badge-safe">i18n Ready</span>
+            </div>
+            <div class="form-group" style="margin-bottom:var(--space-3);">
+              <label class="form-label" for="lang-select">System Display Language</label>
+              <select class="form-control" id="lang-select" onchange="settingsManager.changeLanguage(this.value)">
+                <option value="English">English (United States / Government Default)</option>
+                <option value="Spanish">Español (Spanish)</option>
+                <option value="Tagalog">Tagalog (Filipino Localized)</option>
+                <option value="French">Français (French Relief Standard)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- KEYBOARD SHORTCUTS REFERENCE -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Keyboard Shortcuts</span>
+              <span class="badge badge-safe">Global</span>
+            </div>
+            <table style="width:100%;font-size:13px;border-collapse:collapse;">
+              <thead>
+                <tr style="text-align:left;border-bottom:1px solid var(--border-hairline);">
+                  <th style="padding:6px 8px;font-weight:600;">Shortcut</th>
+                  <th style="padding:6px 8px;font-weight:600;">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td style="padding:5px 8px;"><kbd style="padding:2px 6px;background:var(--sage-100);border:1px solid var(--border-hairline);border-radius:3px;font-size:11px;">Ctrl + K</kbd></td><td style="padding:5px 8px;">Open global command palette</td></tr>
+                <tr style="background:var(--bg-honeydew);"><td style="padding:5px 8px;"><kbd style="padding:2px 6px;background:var(--sage-100);border:1px solid var(--border-hairline);border-radius:3px;font-size:11px;">Alt + 1</kbd></td><td style="padding:5px 8px;">Navigate to Live Map</td></tr>
+                <tr><td style="padding:5px 8px;"><kbd style="padding:2px 6px;background:var(--sage-100);border:1px solid var(--border-hairline);border-radius:3px;font-size:11px;">Alt + 2</kbd></td><td style="padding:5px 8px;">Navigate to Dashboard</td></tr>
+                <tr style="background:var(--bg-honeydew);"><td style="padding:5px 8px;"><kbd style="padding:2px 6px;background:var(--sage-100);border:1px solid var(--border-hairline);border-radius:3px;font-size:11px;">Alt + 3</kbd></td><td style="padding:5px 8px;">Navigate to Convoy Dispatch</td></tr>
+                <tr><td style="padding:5px 8px;"><kbd style="padding:2px 6px;background:var(--sage-100);border:1px solid var(--border-hairline);border-radius:3px;font-size:11px;">Alt + 4</kbd></td><td style="padding:5px 8px;">Navigate to Shelter Board</td></tr>
+                <tr style="background:var(--bg-honeydew);"><td style="padding:5px 8px;"><kbd style="padding:2px 6px;background:var(--sage-100);border:1px solid var(--border-hairline);border-radius:3px;font-size:11px;">Alt + 5</kbd></td><td style="padding:5px 8px;">Navigate to Hazard Log</td></tr>
+                <tr><td style="padding:5px 8px;"><kbd style="padding:2px 6px;background:var(--sage-100);border:1px solid var(--border-hairline);border-radius:3px;font-size:11px;">Alt + 6</kbd></td><td style="padding:5px 8px;">Navigate to Supply Swap</td></tr>
+                <tr style="background:var(--bg-honeydew);"><td style="padding:5px 8px;"><kbd style="padding:2px 6px;background:var(--sage-100);border:1px solid var(--border-hairline);border-radius:3px;font-size:11px;">Alt + 7</kbd></td><td style="padding:5px 8px;">Navigate to Alerts Inbox</td></tr>
+                <tr><td style="padding:5px 8px;"><kbd style="padding:2px 6px;background:var(--sage-100);border:1px solid var(--border-hairline);border-radius:3px;font-size:11px;">ESC</kbd></td><td style="padding:5px 8px;">Close modals, command palette</td></tr>
+              </tbody>
+            </table>
+          </div>
+
         </div>
 
-        <!-- SYNC & OFFLINE -->
-        <div class="card">
-          <div class="card-header">
-            <span class="card-title">Offline Data Sync Telemetry</span>
-            <span class="badge badge-safe">0 Queued Actions</span>
+        <div style="display:flex;flex-direction:column;gap:var(--space-4);">
+
+          <!-- OFFLINE SYNC QUEUE -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Offline Sync Queue</span>
+              <span id="offline-queue-badge" class="badge badge-safe">Queue Empty</span>
+            </div>
+            <p style="font-size:var(--text-sm);margin-bottom:var(--space-4);">
+              Actions submitted while offline are queued locally and flushed when connectivity returns. Retry limit is 3 attempts per action.
+            </p>
+            <div id="offline-queue-table" style="margin-bottom:var(--space-3);"></div>
+            <div style="display:flex;gap:var(--space-2);">
+              <button class="btn btn-secondary" onclick="settingsManager.forceSync()">Force Sync Now</button>
+              <button class="btn btn-ghost" id="offline-queue-clear" onclick="settingsManager.clearQueue()" disabled>Clear Queue</button>
+            </div>
           </div>
-          <p style="font-size: var(--text-sm); margin-bottom: var(--space-4);">
-            Last Synced: <strong>1 minute ago</strong>. Local storage state cached.
-          </p>
-          <button class="btn btn-secondary" onclick="toast.info('Local offline queue force synced with backend server.')">
-            Force Offline Sync Now
-          </button>
+
+          <!-- SYNC TELEMETRY -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Data Freshness Telemetry</span>
+              <span class="badge badge-safe">Live</span>
+            </div>
+            <div id="freshness-status-panel" style="font-size:13px;line-height:1.8;">
+              <!-- Rendered by settings.js -->
+            </div>
+          </div>
+
+          <!-- USER MANAGEMENT CONTAINER -->
+          <div id="user-mgmt-container">
+            <!-- Rendered by settings.js -->
+          </div>
+
         </div>
       </div>
     </div>
@@ -56,7 +128,16 @@
   <script src="js/auth.js"></script>
   <script src="js/statusBadge.js"></script>
   <script src="js/toast.js"></script>
-  <script src="js/api.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/socket.js"></script>
+  <script src="js/shared/search.js"></script>
+  <script src="js/shared/a11y.js"></script>
+  <script src="js/shared/freshness.js"></script>
+  <script src="js/shared/error.js"></script>
+  <script src="js/shared/copy.js"></script>
+  <script src="js/offlineQueue.js"></script>
+  <script src="js/globalSearch.js"></script>
   <script src="js/navbar.js"></script>
+  <script src="js/pages/settings.js"></script>
 </body>
 </html>

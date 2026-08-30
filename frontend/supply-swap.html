@@ -11,270 +11,78 @@
   <link rel="stylesheet" href="css/components.css">
 
   <style>
-    /* Tab Navigation */
-    .tab-bar {
-      display: flex;
-      gap: 0;
-      margin-bottom: var(--space-5);
-      border-bottom: 2px solid var(--border-hairline);
-      overflow-x: auto;
-    }
-
-    .tab-btn {
-      padding: var(--space-3) var(--space-5);
-      font-weight: 600;
-      font-size: var(--text-sm);
-      cursor: pointer;
-      border: none;
-      background: none;
-      color: var(--slate-500);
-      border-bottom: 3px solid transparent;
-      transition: color var(--motion-fast) var(--ease), border-color var(--motion-fast) var(--ease);
-      white-space: nowrap;
-      position: relative;
-      bottom: -2px;
-    }
-
-    .tab-btn.active {
-      color: var(--forest-700);
-      border-bottom: 3px solid var(--forest-600);
-    }
-
-    .tab-btn:hover:not(.active) {
-      color: var(--slate-800);
-    }
-
-    .tab-panel {
-      display: none;
-    }
-
-    .tab-panel.active {
-      display: block;
-    }
-
-    /* Summary Strip */
     .summary-strip {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: var(--space-4);
       margin-bottom: var(--space-5);
     }
-
     .metric-card {
       background: var(--white);
       border: 1px solid var(--border-hairline);
       border-radius: var(--radius);
       padding: var(--space-4);
     }
-
-    /* Transfer Form */
-    .swap-form-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: var(--space-4);
-    }
-
-    @media (max-width: 768px) {
-      .swap-form-grid { grid-template-columns: 1fr; }
-    }
-
-    /* Impact Preview Box */
-    .impact-preview-box {
-      background: var(--sage-100);
-      border: 1px solid var(--border-hairline);
-      border-radius: var(--radius);
-      padding: var(--space-4);
-      margin-top: var(--space-4);
-    }
-
-    .impact-preview-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: var(--space-4);
-      margin-top: var(--space-3);
-    }
-
-    .impact-hub-card {
-      background: var(--white);
-      border: 1px solid var(--border-hairline);
-      border-radius: var(--radius);
-      padding: var(--space-3);
-    }
-
-    /* Transfer Lifecycle Timeline */
-    .lifecycle-track {
+    .tab-bar {
       display: flex;
-      align-items: center;
-      gap: 0;
-      margin: var(--space-3) 0;
-      overflow-x: auto;
+      gap: var(--space-2);
+      border-bottom: 2px solid var(--border-hairline);
+      margin-bottom: var(--space-5);
     }
-
-    .lifecycle-step {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-      min-width: 80px;
-    }
-
-    .lifecycle-dot {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      font-weight: 700;
-      border: 2px solid var(--border-hairline);
-      background: var(--white);
-      color: var(--slate-500);
-    }
-
-    .lifecycle-dot.done {
-      background: var(--forest-700);
-      border-color: var(--forest-700);
-      color: var(--white);
-    }
-
-    .lifecycle-dot.active {
-      background: var(--forest-600);
-      border-color: var(--forest-600);
-      color: var(--white);
-      box-shadow: 0 0 0 3px rgba(90, 122, 104, 0.3);
-    }
-
-    .lifecycle-label {
-      font-size: 9px;
+    .tab-btn {
+      padding: var(--space-3) var(--space-4);
+      background: none;
+      border: none;
+      border-bottom: 3px solid transparent;
       font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
-      text-align: center;
       color: var(--slate-500);
-      line-height: 1.2;
+      cursor: pointer;
     }
-
-    .lifecycle-label.done, .lifecycle-label.active {
-      color: var(--forest-700);
+    .tab-btn.active {
+      color: var(--forest-600);
+      border-bottom-color: var(--forest-600);
     }
-
-    .lifecycle-line {
-      flex: 1;
-      height: 2px;
-      background: var(--border-hairline);
-      min-width: 20px;
-      margin-bottom: 18px;
+    .tab-content { display: block; }
+    .tab-content.hidden { display: none; }
+    .cold-chain-alert {
+      background: var(--bg-honeydew);
+      border-left: 4px solid var(--forest-600);
+      padding: var(--space-3) var(--space-4);
+      border-radius: var(--radius);
+      font-size: var(--text-sm);
+      margin-bottom: var(--space-5);
     }
-
-    .lifecycle-line.done {
-      background: var(--forest-600);
-    }
-
-    /* Active Transfer Card */
     .transfer-card {
       background: var(--white);
       border: 1px solid var(--border-hairline);
       border-radius: var(--radius);
       padding: var(--space-4);
-      margin-bottom: var(--space-4);
-      transition: border-color var(--motion-fast) var(--ease);
-    }
-
-    .transfer-card:hover {
-      border-color: var(--forest-600);
-    }
-
-    .transfer-card-header {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
       margin-bottom: var(--space-3);
-    }
-
-    /* Stock Bar */
-    .stock-bar-container {
-      margin-top: var(--space-2);
-    }
-
-    .stock-bar-track {
-      height: 8px;
-      background: var(--sage-100);
-      border-radius: 4px;
-      overflow: hidden;
-      margin: 4px 0;
-    }
-
-    .stock-bar-fill {
-      height: 100%;
-      border-radius: 4px;
-      background: var(--forest-600);
-      transition: width var(--motion-base) var(--ease);
-    }
-
-    .stock-bar-fill.danger {
-      background: var(--slate-800);
-    }
-
-    .stock-bar-fill.warning {
-      background: var(--forest-700);
-    }
-
-    /* Cold-Chain Warning Banner */
-    .cold-chain-alert {
-      background: #F0F5F2;
-      border: 1px solid var(--forest-600);
-      border-left: 4px solid var(--forest-600);
-      border-radius: var(--radius);
-      padding: var(--space-3);
-      font-size: var(--text-xs);
-      margin-bottom: var(--space-4);
-    }
-
-    /* Modal */
-    .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.55);
-      z-index: 2000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: var(--space-4);
-    }
-
-    .modal-overlay.hidden {
-      display: none;
-    }
-
-    .modal-card {
-      background: var(--white);
-      border-radius: var(--radius-lg);
-      border: 1px solid var(--border-hairline);
-      width: 100%;
-      max-width: 580px;
-      max-height: 90vh;
-      overflow-y: auto;
-      padding: var(--space-5);
     }
   </style>
 </head>
 <body>
 
-  <main class="page-main">
+  <main class="page-main" id="main-content">
     <div class="container" style="margin-top: var(--space-5);">
 
       <!-- PAGE HEADER -->
-      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-5);">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-5);">
         <div>
           <span class="panel-label">INTER-WAREHOUSE REBALANCING SYSTEM</span>
-          <h2>Supply Swap Engine</h2>
+          <h1 style="font-size:var(--text-xl);margin:0;">Supply Swap Engine</h1>
         </div>
-        <div style="display: flex; gap: var(--space-2); align-items: center;">
+        <div style="display:flex;gap:var(--space-2);align-items:center;">
           <span class="badge badge-safe" id="role-access-badge">Warehouse Manager</span>
-          <span class="badge badge-blocked" id="match-alert-badge" style="display: none;">⚡ Critical Match Available</span>
+          <span class="badge badge-blocked" id="match-alert-badge" style="display:none;">⚡ Critical Match Available</span>
+          <button class="btn btn-secondary" onclick="supplySwap.openShelterPingModal()" title="Low-bandwidth shelter need submission (B.7)">
+            📡 Shelter Need Ping
+          </button>
         </div>
       </div>
+
+      <!-- B.1 PREDICTIVE SHORTAGE FORECAST (rendered by JS) -->
+      <div id="shortage-forecast-container"></div>
 
       <!-- SUMMARY DASHBOARD STRIP -->
       <div class="summary-strip">
@@ -303,183 +111,110 @@
 
       <!-- TAB BAR -->
       <div class="tab-bar">
-        <button class="tab-btn active" id="tab-btn-offer" onclick="supplySwap.switchTab('offer')">
+        <button class="tab-btn active" data-tab="offer" onclick="supplySwap.switchTab('offer')">
           📤 Offer Supply
         </button>
-        <button class="tab-btn" id="tab-btn-request" onclick="supplySwap.switchTab('request')">
+        <button class="tab-btn" data-tab="request" onclick="supplySwap.switchTab('request')">
           📥 Request Supply
         </button>
-        <button class="tab-btn" id="tab-btn-active" onclick="supplySwap.switchTab('active')">
+        <button class="tab-btn" data-tab="active" onclick="supplySwap.switchTab('active')">
           🔄 Active Transfers
-          <span class="badge badge-safe" style="margin-left: 6px; font-size: 10px;" id="active-count-badge">2</span>
         </button>
       </div>
 
       <!-- TAB 1: OFFER SUPPLY -->
-      <div class="tab-panel active" id="panel-offer">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-5);">
-
-          <!-- OFFER FORM -->
-          <div class="card">
-            <div class="card-header">
-              <span class="card-title">Post Surplus Stock for Transfer</span>
-            </div>
-
-            <form onsubmit="supplySwap.handleOfferSubmit(event)">
-              <div class="form-group">
-                <label class="form-label" for="offer-from-hub">Source Warehouse Hub</label>
-                <select class="form-control" id="offer-from-hub" required>
-                  <option value="wh-bravo">Hub Bravo (Northern Rift) — 4,700 Units Available</option>
-                  <option value="wh-charlie">Hub Charlie (Coastal Base) — 9,000 Units Available</option>
-                  <option value="wh-alpha">Hub Alpha (Central Depot) — 12,000 Units Available</option>
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label class="form-label" for="offer-cargo-type">Cargo Type</label>
-                <select class="form-control" id="offer-cargo-type" required onchange="supplySwap.checkColdChain(this.value)">
-                  <option value="Insulin/Blood">🩸 Insulin & Blood Products (Cold-Chain Required)</option>
-                  <option value="Infant Nutrition">🍼 Infant Nutrition & Emergency Food</option>
-                  <option value="Clean Water">💧 Potable Water Containers</option>
-                  <option value="General">📦 General Aid Supplies</option>
-                </select>
-              </div>
-
-              <div id="cold-chain-flag" style="display: none;" class="cold-chain-alert" style="margin-bottom: var(--space-3);">
-                🧊 <strong>Cold-Chain Required:</strong> Only refrigerated vehicle units will be offered as convoy matches for this cargo type.
-              </div>
-
-              <div class="swap-form-grid">
-                <div class="form-group">
-                  <label class="form-label" for="offer-on-hand">On-Hand Stock (Units)</label>
-                  <input type="number" class="form-control" id="offer-on-hand" value="2400" required min="1">
-                </div>
-                <div class="form-group">
-                  <label class="form-label" for="offer-reserved">Reserved (Committed)</label>
-                  <input type="number" class="form-control" id="offer-reserved" value="800" required min="0">
-                </div>
-              </div>
-
-              <div class="form-group">
-                <label class="form-label" for="offer-transferable">Transferable Quantity (Units)</label>
-                <input type="number" class="form-control" id="offer-transferable" value="1200" required min="1">
-                <span class="text-meta" style="margin-top: 2px; display: block;">Available = On-Hand minus Reserved. Transferable ≤ Available.</span>
-              </div>
-
-              <button type="submit" class="btn btn-primary" style="width: 100%;">POST SUPPLY OFFER & FIND MATCHES →</button>
-            </form>
-          </div>
-
-          <!-- CURRENT OFFERS TABLE -->
-          <div class="card">
-            <div class="card-header">
-              <span class="card-title">Current Open Offers</span>
-              <span class="text-meta">Pending Match</span>
-            </div>
-
-            <div id="offers-list" style="display: flex; flex-direction: column; gap: var(--space-3);">
-              <!-- Rendered by JS -->
-            </div>
-          </div>
-        </div>
+      <div class="tab-content" id="tab-offer">
+        <div id="offers-list"></div>
       </div>
 
-      <!-- TAB 2: REQUEST SUPPLY -->
-      <div class="tab-panel" id="panel-request">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-5);">
-
-          <!-- REQUEST FORM -->
-          <div class="card">
-            <div class="card-header">
-              <span class="card-title">Submit Shortage Request</span>
-            </div>
-
-            <form onsubmit="supplySwap.handleRequestSubmit(event)">
-              <div class="form-group">
-                <label class="form-label" for="req-to-hub">Requesting Warehouse Hub</label>
-                <select class="form-control" id="req-to-hub" required>
-                  <option value="wh-alpha">Hub Alpha (Central Depot)</option>
-                  <option value="wh-bravo">Hub Bravo (Northern Rift)</option>
-                  <option value="wh-charlie">Hub Charlie (Coastal Base)</option>
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label class="form-label" for="req-cargo-type">Critical Resource Needed</label>
-                <select class="form-control" id="req-cargo-type" required>
-                  <option value="Insulin/Blood">🩸 Insulin & Blood Products</option>
-                  <option value="Infant Nutrition">🍼 Infant Nutrition</option>
-                  <option value="Clean Water">💧 Clean Water</option>
-                  <option value="General">📦 General Aid</option>
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label class="form-label" for="req-qty">Quantity Needed (Units)</label>
-                <input type="number" class="form-control" id="req-qty" value="600" required min="1">
-              </div>
-
-              <div class="form-group">
-                <label class="form-label" for="req-urgency">Urgency Level</label>
-                <select class="form-control" id="req-urgency" required>
-                  <option value="critical">Critical — < 1.5 Days Cover</option>
-                  <option value="caution">Caution — 1.5–3 Days Cover</option>
-                  <option value="advisory">Advisory — Proactive Reorder</option>
-                </select>
-              </div>
-
-              <button type="submit" class="btn btn-destructive" style="width: 100%;">⚡ SUBMIT SHORTAGE REQUEST →</button>
-            </form>
-          </div>
-
-          <!-- MATCHED OFFERS LIST -->
-          <div class="card">
-            <div class="card-header">
-              <span class="card-title">Matched Transfer Offers</span>
-              <span class="badge badge-blocked">1 Critical Match</span>
-            </div>
-            <div id="matches-list">
-              <!-- Rendered by JS -->
-            </div>
-          </div>
-        </div>
+      <!-- TAB 2: REQUEST SUPPLY & MATCHES -->
+      <div class="tab-content hidden" id="tab-request">
+        <div id="matches-list"></div>
       </div>
 
       <!-- TAB 3: ACTIVE TRANSFERS -->
-      <div class="tab-panel" id="panel-active">
-        <div id="active-transfers-container">
-          <!-- Rendered by JS -->
-        </div>
+      <div class="tab-content hidden" id="tab-active">
+        <div id="active-transfers-container"></div>
       </div>
 
     </div>
   </main>
 
   <!-- IMPACT PREVIEW MODAL -->
-  <div class="modal-overlay hidden" id="impact-preview-modal">
+  <div class="modal-overlay hidden" id="impact-preview-modal" role="dialog" aria-modal="true" aria-label="Transfer impact preview">
     <div class="modal-card">
       <div class="card-header" style="margin-bottom: var(--space-4);">
         <div style="display: flex; align-items: center; gap: 8px;">
           <span style="font-size: 20px;">📊</span>
           <span class="card-title">Transfer Impact Preview</span>
         </div>
-        <button style="background: none; border: none; font-size: 18px; cursor: pointer;" onclick="supplySwap.closeImpactModal()">✕</button>
+        <button style="background: none; border: none; font-size: 18px; cursor: pointer;" onclick="supplySwap.closeImpactPreview()" aria-label="Close modal">✕</button>
       </div>
 
       <p style="font-size: var(--text-sm); color: var(--slate-500); margin-bottom: var(--space-4);">
         Review the after-state of both warehouses before committing to this transfer. Approve only if source hub remains above its safety threshold.
       </p>
 
-      <div id="impact-preview-content">
-        <!-- Rendered by JS -->
-      </div>
+      <div id="impact-modal-warning"></div>
+      <div id="impact-modal-desc"></div>
 
       <div style="display: flex; gap: var(--space-3); margin-top: var(--space-5);">
-        <button class="btn btn-secondary" style="flex: 1;" onclick="supplySwap.closeImpactModal()">Cancel Transfer</button>
-        <button class="btn btn-primary" style="flex: 2;" onclick="supplySwap.confirmTransfer()">
-          ✓ CONFIRM TRANSFER & DISPATCH CONVOY
+        <button class="btn btn-secondary" style="flex: 1;" onclick="supplySwap.closeImpactPreview()">Cancel Transfer</button>
+        <button class="btn btn-primary" style="flex: 2;" onclick="supplySwap.confirmImpactApproval()">
+          ✓ CONFIRM TRANSFER &amp; DISPATCH CONVOY
         </button>
       </div>
+    </div>
+  </div>
+
+  <!-- B.7 LOW-BANDWIDTH SHELTER NEED PING MODAL -->
+  <div class="modal-overlay hidden" id="shelter-ping-modal" role="dialog" aria-modal="true" aria-label="Submit low-bandwidth shelter need ping">
+    <div class="modal-card">
+      <div class="card-header" style="margin-bottom: var(--space-4);">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 20px;">📡</span>
+          <span class="card-title">Shelter Need Ping (B.7 Field Submission)</span>
+        </div>
+        <button style="background: none; border: none; font-size: 18px; cursor: pointer;" onclick="supplySwap.closeShelterPingModal()" aria-label="Close modal">✕</button>
+      </div>
+
+      <p style="font-size: var(--text-sm); color: var(--slate-500); margin-bottom: var(--space-4);">
+        Low-bandwidth entry point for field coordinators. Submissions enter the standard request pipeline tagged as "Field Report".
+      </p>
+
+      <form onsubmit="supplySwap.submitShelterNeedPing(event)">
+        <div class="form-group">
+          <label class="form-label" for="ping-shelter-id">Shelter Identifier / Name</label>
+          <input type="text" class="form-control" id="ping-shelter-id" placeholder="e.g. Shelter 19 (Island Reach)" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="ping-item">Critical Supply Needed</label>
+          <select class="form-control" id="ping-item" required>
+            <option value="Insulin/Blood">🩸 Insulin &amp; Blood Products (Cold-Chain)</option>
+            <option value="Infant Nutrition">🍼 Infant Nutrition &amp; Emergency Rations</option>
+            <option value="Clean Water">💧 Clean Drinking Water Containers</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="ping-qty">Estimated Quantity (Units)</label>
+          <input type="number" class="form-control" id="ping-qty" placeholder="e.g. 300" min="1" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="ping-urgency">Urgency Tier</label>
+          <select class="form-control" id="ping-urgency" required>
+            <option value="critical">Critical (&lt; 1.5 Days Cover)</option>
+            <option value="caution">Caution (1.5 - 3 Days Cover)</option>
+          </select>
+        </div>
+
+        <div style="display: flex; gap: var(--space-3); margin-top: var(--space-5);">
+          <button type="button" class="btn btn-secondary" style="flex: 1;" onclick="supplySwap.closeShelterPingModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" style="flex: 2;">📡 SUBMIT NEED PING →</button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -487,7 +222,18 @@
   <script src="js/auth.js"></script>
   <script src="js/statusBadge.js"></script>
   <script src="js/toast.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/socket.js"></script>
   <script src="js/api.js"></script>
+  <script src="js/shared/search.js"></script>
+  <script src="js/shared/a11y.js"></script>
+  <script src="js/shared/freshness.js"></script>
+  <script src="js/shared/loading.js"></script>
+  <script src="js/shared/empty.js"></script>
+  <script src="js/shared/error.js"></script>
+  <script src="js/shared/copy.js"></script>
+  <script src="js/offlineQueue.js"></script>
+  <script src="js/globalSearch.js"></script>
   <script src="js/navbar.js"></script>
   <script src="js/pages/supplySwap.js"></script>
 

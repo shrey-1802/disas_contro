@@ -12,35 +12,24 @@
 </head>
 <body>
 
-  <main class="page-main">
+  <main class="page-main" id="main-content">
     <div class="container" style="margin-top: var(--space-5);">
       <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-5);">
         <div>
           <span class="panel-label">COMMAND CENTER ALERTS</span>
           <h2>Alerts Inbox & Escalations</h2>
         </div>
-        <span class="badge badge-blocked">1 Critical Active</span>
+        <span id="active-critical-count" class="badge badge-blocked">1 Critical Active</span>
       </div>
 
       <div class="card">
         <div class="card-header">
           <span class="card-title">System-Wide Critical Alerts Feed</span>
-          <button class="btn btn-secondary" onclick="ackAll()">Acknowledge All</button>
+          <button class="btn btn-secondary" onclick="alertsManager.ackAll()">Acknowledge All</button>
         </div>
 
         <div id="alerts-list" style="display: flex; flex-direction: column; gap: var(--space-3);">
-          <div class="card critical" style="background: var(--bg-honeydew);">
-            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-              <div>
-                <span class="badge badge-blocked" style="margin-bottom: 6px;">❖ CRITICAL ALERT</span>
-                <h4>Isolated Shelter Detected — Shelter 19 (Island Reach)</h4>
-                <p style="font-size: var(--text-sm); color: var(--slate-500); margin-top: 4px;">
-                  Shelter 19 has 0.5 days supply remaining with NO viable road path from any warehouse depot due to Bridge B14 closure.
-                </p>
-              </div>
-              <button class="btn btn-primary" style="min-height: 34px; font-size: 11px;" onclick="toast.acknowledgeBanner()">Acknowledge Alert</button>
-            </div>
-          </div>
+          <!-- Rendered dynamically by alerts.js -->
         </div>
       </div>
     </div>
@@ -49,13 +38,18 @@
   <script src="js/auth.js"></script>
   <script src="js/statusBadge.js"></script>
   <script src="js/toast.js"></script>
-  <script src="js/api.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/socket.js"></script>
+  <script src="js/shared/search.js"></script>
+  <script src="js/shared/a11y.js"></script>
+  <script src="js/shared/freshness.js"></script>
+  <script src="js/shared/loading.js"></script>
+  <script src="js/shared/empty.js"></script>
+  <script src="js/shared/error.js"></script>
+  <script src="js/shared/copy.js"></script>
+  <script src="js/offlineQueue.js"></script>
+  <script src="js/globalSearch.js"></script>
   <script src="js/navbar.js"></script>
-
-  <script>
-    function ackAll() {
-      toast.success('All operational alerts acknowledged.');
-    }
-  </script>
+  <script src="js/pages/alerts.js"></script>
 </body>
 </html>
