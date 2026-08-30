@@ -3,10 +3,11 @@
    Production-friendly: runtime-configurable API base, timeout and safer fallback
    ========================================== */
 
-// Determine API base from runtime env (window.__ENV__), meta tag, or sensible default.
-const API_BASE_URL = (window.__ENV && window.__ENV.API_BASE_URL)
+// Determine API base from runtime env (window.__ENV__ or window.__ENV), meta tag, or sensible default.
+const API_BASE_URL = (typeof window !== 'undefined' && window.__ENV__ && window.__ENV__.API_BASE_URL)
+  || (typeof window !== 'undefined' && window.__ENV && window.__ENV.API_BASE_URL)
   || (document.querySelector('meta[name="api-base"]') && document.querySelector('meta[name="api-base"]').content)
-  || '/api';
+  || 'http://localhost:3000/api/v1';
 
 const MOCK_DATA = {
   warehouses: [
