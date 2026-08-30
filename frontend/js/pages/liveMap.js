@@ -19,19 +19,26 @@ class LiveMapManager {
   }
 
   init() {
+    const warehousesData = window.store ? window.store.getWarehouses() : [];
+    const firstWh = warehousesData[0];
+    const initialCenter = firstWh && (firstWh.lat || firstWh.latitude)
+      ? [(firstWh.lat || firstWh.latitude), (firstWh.lng || firstWh.longitude)]
+      : [14.605, 120.985];
+
     // Initialize Leaflet Map
     this.map = L.map('map', {
-      center: [14.605, 120.985],
+      center: initialCenter,
       zoom: 12,
       zoomControl: false
     });
 
     L.control.zoom({ position: 'bottomright' }).addTo(this.map);
 
-    // Free OpenStreetMap Tiles (Clean, No API Key Required)
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | DISISTA CONTROL',
-      maxZoom: 19
+    // Reliable CartoDB Voyager Tiles (Fast, high-contrast, no API key required)
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://carto.com/">CARTO</a> | DISISTA CONTROL',
+      maxZoom: 19,
+      subdomains: 'abcd'
     }).addTo(this.map);
 
     // Add Layer Groups to Map
@@ -39,6 +46,18 @@ class LiveMapManager {
 
     // Render Initial Layers
     this.renderAllLayers();
+
+    // Prevent container measurement reflow loop
+    setTimeout(() => {
+      if (this.map) {
+        this.map.invalidateSize();
+        this.fitMapBounds();
+      }
+    }, 200);
+
+    window.addEventListener('resize', () => {
+      if (this.map) this.map.invalidateSize();
+    });
 
     // Map Click Listener
     this.map.on('click', (e) => this.handleMapPointClick(e));
@@ -52,6 +71,38 @@ class LiveMapManager {
     if (window.socket) {
       window.socket.on('route:recalculated', () => this.renderAllLayers());
       window.socket.on('hazard:updated', () => this.renderAllLayers());
+    }
+  }
+
+  fitMapBounds() {
+    try {
+      const allPoints = [];
+      const warehouses = window.store ? window.store.getWarehouses() : [];
+      const shelters = window.store ? window.store.getShelters() : [];
+      const convoys = window.store ? window.store.getConvoys() : [];
+      
+      warehouses.forEach(w => {
+        const lat = w.lat || w.latitude;
+        const lng = w.lng || w.longitude;
+        if (lat && lng) allPoints.push([lat, lng]);
+      });
+      shelters.forEach(s => {
+        const lat = s.lat || s.latitude;
+        const lng = s.lng || s.longitude;
+        if (lat && lng) allPoints.push([lat, lng]);
+      });
+      convoys.forEach(c => {
+        const lat = c.lat || c.latitude;
+        const lng = c.lng || c.longitude;
+        if (lat && lng) allPoints.push([lat, lng]);
+      });
+
+      if (allPoints.length > 0 && this.map) {
+        const bounds = L.latLngBounds(allPoints);
+        this.map.fitBounds(bounds, { padding: [100, 100], maxZoom: 13 });
+      }
+    } catch (e) {
+      console.warn('[LiveMap] Fit bounds skipped', e);
     }
   }
 
@@ -108,6 +159,10 @@ class LiveMapManager {
     const hazardsData = window.store ? window.store.getHazards() : [];
 
     hazardsData.forEach(h => {
+      const lat = h.lat || h.latitude;
+      const lng = h.lng || h.longitude;
+      if (!lat || !lng) return;
+
       const strokeStyle = h.confirmed ? 'none' : '4 3';
       const strokeColor = h.severity === 'impassable' ? '#3A4750' : '#5A7A68';
       const iconShape = h.severity === 'impassable' ? '❖' : '▲';
@@ -138,7 +193,7 @@ class LiveMapManager {
         iconAnchor: [20, 20]
       });
 
-      const marker = L.marker([h.lat, h.lng], { icon: customIcon });
+      const marker = L.marker([lat, lng], { icon: customIcon });
       marker.on('click', () => this.inspectEntity('hazard', h));
       this.layers.hazards.addLayer(marker);
     });
@@ -150,6 +205,10 @@ class LiveMapManager {
     const convoysData = window.store ? window.store.getConvoys() : [];
 
     convoysData.forEach(c => {
+      const lat = c.lat || c.latitude;
+      const lng = c.lng || c.longitude;
+      if (!lat || !lng) return;
+
       const routeColor = c.status === 'Stranded' ? '#3A4750' : (c.status === 'Rerouted' ? '#5A7A68' : '#4A6656');
       const lineStyle = c.status === 'Rerouted' ? '6, 6' : 'none';
 
@@ -173,7 +232,7 @@ class LiveMapManager {
         iconAnchor: [60, 14]
       });
 
-      const marker = L.marker([c.lat, c.lng], { icon: arrowIcon });
+      const marker = L.marker([lat, lng], { icon: arrowIcon });
       marker.on('click', () => this.inspectEntity('convoy', c));
       this.layers.convoys.addLayer(marker);
     });
@@ -184,6 +243,10 @@ class LiveMapManager {
     const sheltersData = window.store ? window.store.getShelters() : [];
 
     sheltersData.forEach(s => {
+      const lat = s.lat || s.latitude;
+      const lng = s.lng || s.longitude;
+      if (!lat || !lng) return;
+
       const color = s.isolated || s.urgency === 'critical' ? '#3A4750' : '#5A7A68';
       const icon = L.divIcon({
         html: `<div style="background: ${color}; color: #FFF; padding: 5px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; border: 1.5px solid #FFF; box-shadow: 0 4px 12px rgba(0,0,0,0.25);">
@@ -192,7 +255,7 @@ class LiveMapManager {
         className: 'shelter-marker',
         iconAnchor: [45, 14]
       });
-      const marker = L.marker([s.lat, s.lng], { icon });
+      const marker = L.marker([lat, lng], { icon });
       marker.on('click', () => this.inspectEntity('shelter', s));
       this.layers.shelters.addLayer(marker);
     });
@@ -203,6 +266,10 @@ class LiveMapManager {
     const warehousesData = window.store ? window.store.getWarehouses() : [];
 
     warehousesData.forEach(w => {
+      const lat = w.lat || w.latitude;
+      const lng = w.lng || w.longitude;
+      if (!lat || !lng) return;
+
       const icon = L.divIcon({
         html: `<div style="background: #4A6656; color: #FFF; padding: 5px 10px; border-radius: 8px; font-size: 11px; font-weight: 700; border: 1.5px solid #FFF; box-shadow: 0 4px 12px rgba(0,0,0,0.25);">
                  📦 ${w.name}
@@ -210,7 +277,7 @@ class LiveMapManager {
         className: 'wh-marker',
         iconAnchor: [45, 14]
       });
-      const marker = L.marker([w.lat, w.lng], { icon });
+      const marker = L.marker([lat, lng], { icon });
       marker.on('click', () => this.inspectEntity('warehouse', w));
       this.layers.warehouses.addLayer(marker);
     });
